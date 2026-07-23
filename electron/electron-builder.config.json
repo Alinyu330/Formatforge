@@ -1,0 +1,31 @@
+{
+  "appId": "com.formatforge.app",
+  "productName": "FormatForge",
+  "directories": {
+    "buildResources": "resources",
+    "output": "dist"
+  },
+  "files": [
+    "assets/**/*",
+    "build/**/*",
+    "capacitor.config.*",
+    "app/**/*"
+  ],
+  "nsis": {
+    "allowElevation": true,
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "win": {
+    "target": ["nsis"],
+    "icon": "assets/appIcon.ico"
+  },
+  "mac": {
+    "category": "public.app-category.utilities",
+    "target": ["dmg"]
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "category": "Utility"
+  }
+}

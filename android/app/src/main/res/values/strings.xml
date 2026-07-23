@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FormatForge</string>
+    <string name="title_activity_main">FormatForge</string>
+    <string name="package_name">com.formatforge.app</string>
+    <string name="custom_url_scheme">com.formatforge.app</string>
+</resources>
