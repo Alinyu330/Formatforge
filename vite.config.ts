@@ -91,15 +91,21 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png}'],
         maximumFileSizeToCacheInBytes: 40 * 1024 * 1024, // 40MB for ffmpeg wasm
+        // 禁止清理旧版本 precache。否则旧标签页仍引用旧 chunk 时，chunk 已被删除，
+        // 会触发「Failed to fetch dynamically imported module」。
+        cleanupOutdatedCaches: false,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /\.(?:js|css|html|svg|png|wasm)$/,
+            // 仅缓存未被 globPatterns 预缓存的 ffmpeg wasm。
+            // js/css/html 已由 globPatterns 按内容哈希预缓存，这里再用 CacheFirst
+            // 会导致重新部署后仍命中旧版本资源，进而动态 import 加载失败。
+            urlPattern: /\.wasm$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'static-resources',
-              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+              cacheName: 'ffmpeg-wasm',
+              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 24 * 60 * 60 },
             },
           },
         ],
