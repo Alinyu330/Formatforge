@@ -5,7 +5,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 import coreURL from '@ffmpeg/core?url';
-import wasmURL from '@ffmpeg/core/wasm?url';
+import bundledWasmURL from '@ffmpeg/core/wasm?url';
 import workerURL from '@ffmpeg/ffmpeg/worker?url';
 import type { MediaAdapter } from './media.adapter';
 import type { ConvertTask } from '@/types';
@@ -13,6 +13,10 @@ import { isQMCFile, decryptQMC, decryptMusicexWithEkey, fetchEkeyFromAPI, isVali
 import { isNCMFile, decryptNCM, isValidNCMHeader } from './ncm';
 import { isKGMFile, decryptKGM, isValidKGMHeader } from './kgm';
 import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb } from './kgg';
+
+// Cloudflare Pages 单文件上限 25MiB，而 ffmpeg-core.wasm 约 31MB，
+// 需通过环境变量 VITE_FFMPEG_WASM_URL 托管到外部（如 Cloudflare R2）；未设置时回退到打包内置的 wasm。
+const wasmURL = import.meta.env.VITE_FFMPEG_WASM_URL || bundledWasmURL;
 
 // 超时配置
 const ENGINE_LOAD_TIMEOUT_MS = 300000;  // 引擎加载超时：5分钟（首次 WASM 编译可能较慢）
