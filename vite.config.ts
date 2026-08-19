@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from 'vite-plugin-pwa';
@@ -7,6 +7,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 // 如果部署到 username.github.io/repo-name 则设为 '/repo-name/'
 // 原生 App 打包时使用相对路径，Web 部署时使用指定 base 路径
 const BASE_PATH = process.env.CAPACITOR ? './' : (process.env.BASE_PATH || '/');
+
+// 通过 VITE_FFMPEG_WASM_URL 将 ffmpeg 的 wasm 托管到外部（如 Cloudflare R2 / GitHub Pages）时，
+// 构建产物中剔除该 wasm，规避 Cloudflare Pages 25 MiB 单文件上限。
+const stripFfmpegWasm = (): Plugin => ({
+  name: 'strip-ffmpeg-wasm',
+  apply: 'build',
+  generateBundle(_options, bundle) {
+    if (!process.env.VITE_FFMPEG_WASM_URL) return;
+    for (const key of Object.keys(bundle)) {
+      if (key.endsWith('.wasm')) delete bundle[key];
+    }
+  },
+});
 
 export default defineConfig({
   base: BASE_PATH,
@@ -45,6 +58,7 @@ export default defineConfig({
       },
     }),
     tsconfigPaths({ ignoreConfigErrors: true }),
+    stripFfmpegWasm(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
