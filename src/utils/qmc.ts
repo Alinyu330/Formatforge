@@ -898,14 +898,18 @@ function isValidAudioHeader(data: Uint8Array): boolean {
 // ==================== 文件类型识别 ====================
 
 export function isQMCFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
-  return [
+  const parts = filename.toLowerCase().split('.');
+  const list = [
     'qmc0', 'qmc3', 'qmc4', 'qmc6', 'qmc8', 'qmcflac',
     'mgg', 'mflac', 'mflac0', 'mgg1',
     'bkcmp3', 'bkcflac',
     'tkm', 'tkm3', 'tkm4',
     'qmcogg',
-  ].includes(ext);
+  ];
+  for (let i = parts.length - 1; i >= 1; i--) {
+    if (list.includes(parts[i])) return true;
+  }
+  return false;
 }
 
 /** 验证文件头是否为合法的 QMC 加密文件 */

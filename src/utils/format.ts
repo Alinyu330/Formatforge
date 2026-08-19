@@ -12,6 +12,15 @@ export function getFileExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() || '';
 }
 
+/** 解析音频源格式扩展名，兼容双重后缀（如 歌名.mflac.flac → mflac、歌名.qmcflac.flac → qmcflac）。 */
+export function resolveAudioExtension(filename: string): string {
+  const parts = filename.toLowerCase().split('.');
+  for (let i = parts.length - 1; i >= 1; i--) {
+    if (AUDIO_ENCRYPTED_EXTENSIONS.includes(parts[i])) return parts[i];
+  }
+  return getFileExtension(filename);
+}
+
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }

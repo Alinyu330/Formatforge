@@ -14,8 +14,7 @@ function readUint32LE(data: Uint8Array, offset: number): number {
 }
 
 export function isKGGFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
-  return ext === 'kgg';
+  return filename.toLowerCase().split('.').slice(1).includes('kgg');
 }
 
 /** 验证文件头是否为合法的 KGG 加密文件（mode == 5） */

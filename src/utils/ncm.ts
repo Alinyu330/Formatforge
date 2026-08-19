@@ -258,8 +258,7 @@ export async function decryptNCM(data: Uint8Array): Promise<{ data: Uint8Array; 
 }
 
 export function isNCMFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
-  return ext === 'ncm';
+  return filename.toLowerCase().split('.').slice(1).includes('ncm');
 }
 
 /** 验证文件头是否为合法的 NCM 加密文件 */

@@ -160,8 +160,8 @@ export function decryptKGM(data: Uint8Array): { data: Uint8Array; ext: string } 
 }
 
 export function isKGMFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
-  return ['kgm', 'kgma', 'vpr'].includes(ext);
+  const parts = filename.toLowerCase().split('.');
+  return parts.slice(1).some((part) => ['kgm', 'kgma', 'vpr'].includes(part));
 }
 
 /** 验证文件头是否为合法的 KGM/KGMA/VPR 加密文件 */

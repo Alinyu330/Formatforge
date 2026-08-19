@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ConvertTask, ConvertType, ConvertItem, TaskStatus, AudioOptions, ImageOptions, VideoOptions } from '@/types';
 import { MAX_CONCURRENT } from '@/types';
-import { getFileExtension, generateId } from '@/utils/format';
+import { getFileExtension, resolveAudioExtension, generateId } from '@/utils/format';
 import { convertAudio } from '@/utils/audio';
 import { convertVideo } from '@/utils/video';
 import { convertSheet } from '@/utils/sheet';
@@ -128,7 +128,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
       convertType: type,
       fileName: file.name,
       fileSize: file.size,
-      sourceFormat: getFileExtension(file.name),
+      sourceFormat: type === 'audio' ? resolveAudioExtension(file.name) : getFileExtension(file.name),
       targetFormat: '',
       items: formats.map((targetFormat) => ({
         id: generateId(),
