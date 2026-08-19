@@ -14,6 +14,7 @@ const IMAGE_FORMATS = [
   { value: 'bmp', label: 'BMP' },
   { value: 'ico', label: 'ICO' },
   { value: 'tiff', label: 'TIFF' },
+  { value: 'pdf', label: 'PDF' },
 ];
 
 export default function ImageConvert() {
@@ -34,8 +35,8 @@ export default function ImageConvert() {
     <ConvertLayout>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <h2 className="text-base sm:text-lg font-semibold text-white/85">图片格式转换</h2>
-          <p className="text-[10px] sm:text-xs text-white/35 mt-1">图片格式互转，支持调整尺寸和质量，可同时输出多种格式</p>
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--text-strong)]">图片格式转换</h2>
+          <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-1">图片格式互转或转换为 PDF，支持调整尺寸和质量，可同时输出多种格式</p>
         </div>
 
         <FileUpload type="image" onFilesAdd={(f) => addFiles(f, 'image')}
@@ -45,11 +46,11 @@ export default function ImageConvert() {
         {tasks.length > 0 && (
           <>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2">目标格式（可多选）</p>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">目标格式（可多选）</p>
               <FormatMultiSelector formats={IMAGE_FORMATS} selected={selectedFormats} onChange={applyFormats} />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2">转换参数</p>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">转换参数</p>
               <ImageOptions />
             </div>
           </>
@@ -60,21 +61,18 @@ export default function ImageConvert() {
         {tasks.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button onClick={startConversion} disabled={isProcessing || pendingCount === 0}
-              className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium
-                bg-[#f59e0b] text-[#0f1724] hover:bg-[#f59e0b]/90
-                disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+              className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-[#f59e0b] text-[#0f1724] hover:bg-[#f59e0b]/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_25px_rgba(245,158,11,0.2)]">
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" />
               {isProcessing ? '转换中...' : `开始转换 (${pendingCount})`}
             </button>
             {doneCount > 0 && (
               <button onClick={downloadAllAsZip}
-                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium
-                  border border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10 transition-all">
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10 transition-all">
                 <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />打包下载全部 ({doneCount})
               </button>
             )}
             <button onClick={clearTasks} disabled={isProcessing}
-              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-colors disabled:opacity-30">清空列表</button>
+              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30">清空列表</button>
           </div>
         )}
       </div>

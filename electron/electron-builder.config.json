@@ -11,6 +11,12 @@
     "capacitor.config.*",
     "app/**/*"
   ],
+  "extraResources": [
+    {
+      "from": "resources/ffmpeg.exe",
+      "to": "ffmpeg.exe"
+    }
+  ],
   "nsis": {
     "allowElevation": true,
     "oneClick": false,

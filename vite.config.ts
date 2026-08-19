@@ -10,8 +10,31 @@ const BASE_PATH = process.env.CAPACITOR ? './' : (process.env.BASE_PATH || '/');
 
 export default defineConfig({
   base: BASE_PATH,
+  server: {
+    proxy: {
+      '/api/qqmusic': {
+        target: 'https://u.y.qq.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/qqmusic/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const cookie = req.headers['x-qqmusic-cookie'];
+            if (typeof cookie === 'string') {
+              proxyReq.setHeader('Cookie', cookie);
+              proxyReq.setHeader('Referer', 'https://y.qq.com/');
+            }
+            proxyReq.removeHeader('x-qqmusic-cookie');
+          });
+        },
+      },
+    },
+  },
   build: {
     sourcemap: 'hidden',
+  },
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/core', '@ffmpeg/util'],
   },
   plugins: [
     react({
@@ -54,16 +77,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,wasm}'],
         maximumFileSizeToCacheInBytes: 40 * 1024 * 1024, // 40MB for ffmpeg wasm
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/unpkg\.com\/.*/,
+            urlPattern: /\.(?:js|css|html|svg|png|wasm)$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'ffmpeg-assets',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 365 * 24 * 60 * 60,
-              },
+              cacheName: 'static-resources',
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
             },
           },
         ],

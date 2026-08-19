@@ -33,9 +33,9 @@ export default function PreviewPanel() {
 
   async function loadContent() {
     if (!item) return;
-    const ext = item.targetFormat;
+    const ext = item?.targetFormat.toLowerCase() || '';
 
-    if (['xlsx', 'csv', 'ods'].includes(ext)) {
+    if (['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'].includes(ext)) {
       setLoading(true);
       try {
         const buffer = await item.resultBlob!.arrayBuffer();
@@ -43,7 +43,7 @@ export default function PreviewPanel() {
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const html = XLSX.utils.sheet_to_html(sheet, { editable: false });
         setContent(`<style>table{border-collapse:collapse;width:100%;font-size:11px;}td,th{border:1px solid #333;padding:3px 6px;text-align:left;}th{background:#1e293b;color:#00d4ff;}</style>${html}`);
-      } catch { setContent('<p class="text-white/30">无法预览</p>'); }
+      } catch { setContent('<p class="text-[var(--text-muted)]">无法预览</p>'); }
       setLoading(false);
     } else if (['html', 'htm'].includes(ext)) {
       setLoading(true);
@@ -53,21 +53,25 @@ export default function PreviewPanel() {
       setLoading(true);
       try {
         const text = await item.resultBlob!.text();
-        setContent(`<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.6;color:#ccc;">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`);
+        setContent(`<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.6;color:var(--text);">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`);
       } catch { setContent(''); }
       setLoading(false);
     }
   }
 
-  const isAudio = item && ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma'].includes(item.targetFormat);
+  const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'alac', 'ape', 'ac3', 'eac3', 'amr', 'aiff', 'au', 'caf', 'webm'];
+  const videoFormats = ['mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'webm'];
+  const mime = item?.resultBlob?.type || '';
+  const isVideo = !!item && (task.convertType === 'video' || (item.targetFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(item.targetFormat) && !audioFormats.includes(item.targetFormat)));
+  const isAudio = !!item && !isVideo && (task.convertType === 'audio' || audioFormats.includes(item.targetFormat));
   const isImage = item && ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico'].includes(item.targetFormat);
 
   const panelContent = (
     <>
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 h-12 border-b border-white/[0.05] shrink-0">
-        <span className="text-xs font-medium text-white/60 truncate flex-1">预览</span>
-        <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-white/[0.05] text-white/30 hover:text-white/60 transition-colors">
+      <div className="flex items-center gap-2 px-4 h-12 border-b border-[var(--border)] shrink-0">
+        <span className="text-xs font-medium text-[var(--text)] truncate flex-1">预览</span>
+        <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -75,11 +79,11 @@ export default function PreviewPanel() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         {!item ? (
-          <div className="flex items-center justify-center h-full text-white/20 text-xs">选择转换项以预览</div>
+          <div className="flex items-center justify-center h-full text-[var(--text-faint)] text-xs">选择转换项以预览</div>
         ) : item.status === 'converting' ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div className="w-8 h-8 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />
-            <p className="text-xs text-white/30">转换中 {item.progress}%</p>
+            <p className="text-xs text-[var(--text-muted)]">转换中 {item.progress}%</p>
           </div>
         ) : item.status === 'error' ? (
           <div className="flex flex-col items-center justify-center h-full text-red-400/60 text-xs gap-1">
@@ -89,7 +93,7 @@ export default function PreviewPanel() {
         ) : isAudio ? (
           <div className="flex flex-col items-center gap-4 py-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
-              playing ? 'bg-[#00d4ff]/20 shadow-[0_0_30px_rgba(0,212,255,0.2)] scale-110' : 'bg-white/[0.04]'
+              playing ? 'bg-[#00d4ff]/20 shadow-[0_0_30px_rgba(0,212,255,0.2)] scale-110' : 'bg-[var(--surface)]'
             }`}>
               <button onClick={() => {
                 const a = audioRef.current; if (!a) return;
@@ -99,11 +103,13 @@ export default function PreviewPanel() {
                 {playing ? <Pause className="w-7 h-7 text-[#00d4ff]" /> : <Play className="w-7 h-7 text-[#00d4ff] ml-0.5" />}
               </button>
             </div>
-            <p className="text-[11px] text-white/50 text-center truncate max-w-full">{task.fileName}</p>
+            <p className="text-[11px] text-[var(--text)] text-center truncate max-w-full">{task.fileName}</p>
             <span className="text-[10px] uppercase text-[#00d4ff]">{item.targetFormat}</span>
             <audio ref={audioRef} src={item.resultUrl || ''} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} className="hidden" />
             <audio src={item.resultUrl || ''} controls className="w-full mt-2" style={{ height: 32 }} />
           </div>
+        ) : isVideo ? (
+          <video src={item.resultUrl || ''} controls className="w-full max-h-full rounded-lg" />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
             <img src={item.resultUrl || ''} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
@@ -113,13 +119,13 @@ export default function PreviewPanel() {
         ) : content ? (
           <div className="text-xs prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: content }} />
         ) : (
-          <div className="flex items-center justify-center h-full text-white/20 text-xs text-center">暂不支持此格式预览</div>
+          <div className="flex items-center justify-center h-full text-[var(--text-faint)] text-xs text-center">暂不支持此格式预览</div>
         )}
       </div>
 
       {/* Footer */}
       {item?.status === 'done' && (
-        <div className="p-2 border-t border-white/[0.05] shrink-0">
+        <div className="p-2 border-t border-[var(--border)] shrink-0">
           <button
             onClick={() => downloadItem(task.id, item.id)}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-[#00d4ff]/10 border border-[#00d4ff]/20 text-[#00d4ff] text-xs font-medium hover:bg-[#00d4ff]/20 transition-colors"
@@ -134,12 +140,12 @@ export default function PreviewPanel() {
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden md:flex w-80 lg:w-96 shrink-0 bg-[#0a0f1a] border-l border-white/[0.06] flex-col h-[calc(100vh-3.5rem)] sticky top-14">
+      <div className="hidden md:flex w-80 lg:w-96 shrink-0 bg-[var(--panel)] border-l border-[var(--border)] flex-col h-[calc(100vh-3.5rem)] sticky top-14">
         {panelContent}
       </div>
 
       {/* Mobile full-screen overlay */}
-      <div className="md:hidden fixed inset-0 z-[70] bg-[#0a0f1a] flex flex-col">
+      <div className="md:hidden fixed inset-0 z-[70] bg-[var(--panel)] flex flex-col">
         {panelContent}
       </div>
     </>

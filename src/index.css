@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --bg: #0f1724;
+  --panel: #0a0f1a;
+  --modal: #111827;
+  --text-strong: rgba(255, 255, 255, 0.85);
+  --text: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  --text-faint: rgba(255, 255, 255, 0.20);
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.10);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --grid-line: rgba(255, 255, 255, 0.025);
+}
+
+html.light {
+  color-scheme: light;
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --modal: #ffffff;
+  --text-strong: rgba(15, 23, 36, 0.90);
+  --text: rgba(15, 23, 36, 0.60);
+  --text-muted: rgba(15, 23, 36, 0.45);
+  --text-faint: rgba(15, 23, 36, 0.30);
+  --surface: rgba(15, 23, 36, 0.05);
+  --surface-hover: rgba(15, 23, 36, 0.10);
+  --border: rgba(15, 23, 36, 0.12);
+  --border-strong: rgba(15, 23, 36, 0.20);
+  --grid-line: rgba(15, 23, 36, 0.04);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -19,8 +51,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.85);
-  background-color: #0f1724;
+  color: var(--text-strong);
+  background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -52,12 +84,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-strong);
 }
 
 /* Selection */
@@ -173,8 +205,8 @@ select:focus-visible {
 /* Hero 背景光晕装饰 */
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 36px 36px;
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
@@ -188,6 +220,14 @@ select:focus-visible {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmer 6s linear infinite;
+}
+
+html.light .text-shimmer {
+  background: linear-gradient(110deg, #0f1724 35%, #00d4ff 50%, #0f1724 65%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Display font for headings - system fallback */

@@ -7,6 +7,8 @@ import unhandled from 'electron-unhandled';
 import { autoUpdater } from 'electron-updater';
 
 import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } from './setup';
+import { setupFFmpegIPC } from './ffmpeg-ipc';
+import { setupKGGIPC } from './kgg-ipc';
 
 // Graceful handling of unhandled errors.
 unhandled();
@@ -45,6 +47,10 @@ if (electronIsDev) {
   setupContentSecurityPolicy(myCapacitorApp.getCustomURLScheme());
   // Initialize our app, build windows, and load content.
   await myCapacitorApp.init();
+  // 注册原生 FFmpeg IPC 处理器
+  setupFFmpegIPC();
+  // 注册 KGG 密钥数据库 IPC 处理器
+  setupKGGIPC();
 })();
 
 // Handle when all of our windows are close (platforms have their own expectations).

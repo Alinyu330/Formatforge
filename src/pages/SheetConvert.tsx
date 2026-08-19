@@ -31,8 +31,8 @@ export default function SheetConvert() {
     <ConvertLayout>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <h2 className="text-base sm:text-lg font-semibold text-white/85">表格格式转换</h2>
-          <p className="text-[10px] sm:text-xs text-white/35 mt-1">电子表格格式互相转换，支持多输出格式</p>
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--text-strong)]">表格格式转换</h2>
+          <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-1">电子表格格式互相转换，支持多输出格式</p>
         </div>
 
         <FileUpload type="sheet" onFilesAdd={(f) => addFiles(f, 'sheet')}
@@ -41,7 +41,7 @@ export default function SheetConvert() {
 
         {tasks.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2">目标格式（可多选）</p>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">目标格式（可多选）</p>
             <FormatMultiSelector formats={SHEET_FORMATS} selected={selectedFormats} onChange={applyFormats} />
           </div>
         )}
@@ -65,7 +65,7 @@ export default function SheetConvert() {
               </button>
             )}
             <button onClick={clearTasks} disabled={isProcessing}
-              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-white/35 hover:text-white/60 hover:bg-white/[0.04] transition-colors disabled:opacity-30">清空列表</button>
+              className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30">清空列表</button>
           </div>
         )}
       </div>

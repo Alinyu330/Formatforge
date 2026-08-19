@@ -17,7 +17,7 @@ export default function FormatSelector({ formats, selected, onChange }: Props) {
             ${
               selected === fmt.value
                 ? 'bg-[#00d4ff]/15 border-[#00d4ff] text-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.15)]'
-                : 'bg-white/[0.03] border-white/8 text-white/50 hover:border-white/20 hover:text-white/70'
+                : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text)] hover:border-[var(--border-strong)] hover:text-[var(--text-strong)]'
             }
           `}
         >

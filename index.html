@@ -11,6 +11,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="FormatForge" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('formatforge-theme');
+        var light = stored === 'light'
+          || (stored !== 'dark' && window.matchMedia('(prefers-color-scheme: light)').matches);
+        if (light) document.documentElement.classList.add('light');
+      } catch (e) {}
+    })();
+  </script>
   <title>FormatForge - 格式转换工具</title>
 </head>
 

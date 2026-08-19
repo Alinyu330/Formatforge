@@ -28,6 +28,14 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
   const quality = task.imageOptions?.quality ?? 0.92;
   const format = task.targetFormat as string;
 
+  if (format === 'pdf') {
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF({ orientation: width > height ? 'l' : 'p', unit: 'px', format: [width, height] });
+    pdf.addImage(canvas.toDataURL('image/jpeg', quality), 'JPEG', 0, 0, width, height);
+    onProgress(100);
+    return pdf.output('blob');
+  }
+
   let mimeType: string;
   if (format === 'jpeg' || format === 'jpg') {
     mimeType = 'image/jpeg';
