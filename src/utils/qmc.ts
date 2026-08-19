@@ -1,6 +1,8 @@
 // QQ音乐 QMC 加密格式解密
 // 支持 QMCv1（旧版 XOR 种子密钥）和 QMCv2（ekey 驱动的 Map XOR / RC4）
 
+import { isQQMusicEncryptedExt } from './format';
+
 // ==================== TC-TEA 解密 ====================
 const TEA_DELTA = 0x9E3779B9;
 const TEA_ROUNDS = 16;
@@ -765,6 +767,7 @@ export async function fetchEkeyFromAPI(
 // ==================== 主解密函数 ====================
 
 export async function decryptQMC(data: Uint8Array): Promise<{ data: Uint8Array; ext: string }> {
+  console.log('[diag] decryptQMC: len=', data.length, 'head=', Array.from(data.slice(0, 16)).map((b) => b.toString(16).padStart(2, '0')).join(' '), 'tail=', Array.from(data.slice(-8)).map((b) => b.toString(16).padStart(2, '0')).join(' '), 'isMusicex=', isMusicexFormat(data));
   // 1. 检测 musicex 格式 —— 需要外部提供 ekey
   if (isMusicexFormat(data)) {
     const info = parseMusicexFooter(data);
@@ -804,16 +807,12 @@ export async function decryptQMC(data: Uint8Array): Promise<{ data: Uint8Array; 
           return { data: decrypted, ext };
         }
       } catch {
-        // ekey 解析失败，回退到静态密码表
+        // ekey 解析失败，继续报错提示
       }
     }
 
-    // 没有可用的 ekey，使用旧版静态密码表
-    offset = (data[0] === 0x6D) ? 8 : 4;
-    const audioData = data.slice(offset);
-    const decrypted = decryptQMC1Stream(audioData, data[offset - 1] || 0);
-    ext = detectAudioFormat(decrypted);
-    return { data: decrypted, ext };
+    // 无内嵌 ekey：新版 QMCv2（手机/新版客户端）密钥为外部存储，静态密码表无法解密
+    throw new Error('该文件为无内嵌密钥的 QMCv2 加密（手机/新版客户端），需要外部 QMCv2 密钥才能解密');
   }
 
   // 3. QMCv1 格式
@@ -898,18 +897,7 @@ function isValidAudioHeader(data: Uint8Array): boolean {
 // ==================== 文件类型识别 ====================
 
 export function isQMCFile(filename: string): boolean {
-  const parts = filename.toLowerCase().split('.');
-  const list = [
-    'qmc0', 'qmc3', 'qmc4', 'qmc6', 'qmc8', 'qmcflac',
-    'mgg', 'mflac', 'mflac0', 'mgg1',
-    'bkcmp3', 'bkcflac',
-    'tkm', 'tkm3', 'tkm4',
-    'qmcogg',
-  ];
-  for (let i = parts.length - 1; i >= 1; i--) {
-    if (list.includes(parts[i])) return true;
-  }
-  return false;
+  return filename.toLowerCase().split('.').slice(1).some((part) => isQQMusicEncryptedExt(part));
 }
 
 /** 验证文件头是否为合法的 QMC 加密文件 */

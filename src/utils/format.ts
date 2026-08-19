@@ -12,11 +12,20 @@ export function getFileExtension(filename: string): string {
   return filename.split('.').pop()?.toLowerCase() || '';
 }
 
+/** 判断某个文件名片段是否为 QQ 音乐加密扩展名（支持可变数字，如 mgg2 / mflac0 / qmc3 / tkm4 等）。 */
+export function isQQMusicEncryptedExt(part: string): boolean {
+  if (/^mgg\d*$/.test(part)) return true;    // mgg / mgg1 / mgg2 ...
+  if (/^mflac\d*$/.test(part)) return true;  // mflac / mflac0 / mflac1 ...
+  if (/^qmc(?:flac|ogg|\d+)$/.test(part)) return true; // qmc0 / qmc3 / qmcflac / qmcogg ...
+  if (/^tkm\d*$/.test(part)) return true;    // tkm / tkm3 / tkm4 ...
+  return part === 'bkcmp3' || part === 'bkcflac';
+}
+
 /** 解析音频源格式扩展名，兼容双重后缀（如 歌名.mflac.flac → mflac、歌名.qmcflac.flac → qmcflac）。 */
 export function resolveAudioExtension(filename: string): string {
   const parts = filename.toLowerCase().split('.');
   for (let i = parts.length - 1; i >= 1; i--) {
-    if (AUDIO_ENCRYPTED_EXTENSIONS.includes(parts[i])) return parts[i];
+    if (AUDIO_ENCRYPTED_EXTENSIONS.includes(parts[i]) || isQQMusicEncryptedExt(parts[i])) return parts[i];
   }
   return getFileExtension(filename);
 }
@@ -50,9 +59,11 @@ export const IMAGE_MIME_MAP: Record<string, string[]> = {
 };
 
 export function detectConvertType(file: File): ConvertType | null {
-  const ext = getFileExtension(file.name);
+  const parts = file.name.toLowerCase().split('.');
+  const ext = parts[parts.length - 1] || '';
   const mime = file.type;
-  if (AUDIO_EXTENSIONS.includes(ext) || AUDIO_ENCRYPTED_EXTENSIONS.includes(ext)) return 'audio';
+  const hasEncryptedAudio = parts.slice(1).some((part) => AUDIO_ENCRYPTED_EXTENSIONS.includes(part) || isQQMusicEncryptedExt(part));
+  if (AUDIO_EXTENSIONS.includes(ext) || hasEncryptedAudio) return 'audio';
   if (VIDEO_EXTENSIONS.includes(ext) || mime.startsWith('video/')) return 'video';
   if (SHEET_EXTENSIONS.includes(ext)) return 'sheet';
   if (IMAGE_EXTENSIONS.includes(ext)) return 'image';

@@ -115,6 +115,42 @@ export function importKugouKeyDb(bytes: Uint8Array): number {
   return Object.keys(map).length;
 }
 
+/** 导出当前密钥库为 JSON 文本（用于电脑端导入后复制到手机端粘贴）。 */
+export function exportKugouKeyMap(): string {
+  const map = ensureKeyMap();
+  if (!map) throw new Error('尚未加载密钥库，请先导入 KGMusicV3.db');
+  return JSON.stringify(map);
+}
+
+/** 从粘贴的 JSON 文本导入密钥库，返回密钥数量。 */
+export function importKugouKeyMapFromText(text: string): number {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text.trim());
+  } catch {
+    throw new Error('密钥文本不是有效的 JSON');
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('密钥文本格式不正确（应为 {"keyId":"EncryptionKey",...}）');
+  }
+  const map: Record<string, string> = {};
+  for (const [keyId, value] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof value === 'string' && value.length > 0) map[keyId] = value;
+  }
+  if (Object.keys(map).length === 0) {
+    throw new Error('密钥文本中没有有效密钥');
+  }
+  keyMapCache = map;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(KGG_KEYMAP_STORAGE_KEY, JSON.stringify(map));
+    }
+  } catch {
+    // 存储失败不阻断导入
+  }
+  return Object.keys(map).length;
+}
+
 /** 查询 keyId 对应的 EncryptionKey */
 export function getKugouKey(keyId: string): string | null {
   return ensureKeyMap()?.[keyId] ?? null;

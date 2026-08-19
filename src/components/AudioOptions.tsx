@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useConvertStore } from '@/store/convertStore';
-import { KUGOU_MUSIC_ENCRYPTED_EXTENSIONS, NETEASE_MUSIC_ENCRYPTED_EXTENSIONS, QQ_MUSIC_ENCRYPTED_EXTENSIONS } from '@/utils/format';
-import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb } from '@/utils/kgg';
+import { KUGOU_MUSIC_ENCRYPTED_EXTENSIONS, NETEASE_MUSIC_ENCRYPTED_EXTENSIONS, isQQMusicEncryptedExt } from '@/utils/format';
+import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb, exportKugouKeyMap, importKugouKeyMapFromText } from '@/utils/kgg';
 
 function readCookieValue(rawCookie: string, key: string): string {
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -14,7 +14,7 @@ export default function AudioOptions() {
   const { audioOptions, setAudioOptions, tasks } = useConvertStore();
   const qmCredentials = audioOptions.qmCredentials ?? { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' as const };
   const sourceFormats = new Set(tasks.map((task) => task.sourceFormat));
-  const hasQQMusicFile = QQ_MUSIC_ENCRYPTED_EXTENSIONS.some((format) => sourceFormats.has(format));
+  const hasQQMusicFile = [...sourceFormats].some((format) => isQQMusicEncryptedExt(format));
   const hasKGG = sourceFormats.has('kgg');
   const hasKugouEncrypted = KUGOU_MUSIC_ENCRYPTED_EXTENSIONS.some((format) => sourceFormats.has(format) && format !== 'kgg');
   const localEncryptedPlatforms = [
@@ -26,6 +26,9 @@ export default function AudioOptions() {
   const [importing, setImporting] = useState(false);
   const [kggStatus, setKggStatus] = useState(() => (hasKugouKeyDb() ? `已加载 ${getKugouKeyCount()} 个密钥` : '尚未加载密钥库'));
   const [kggError, setKggError] = useState('');
+  const [kggText, setKggText] = useState('');
+  const [kggPasteError, setKggPasteError] = useState('');
+  const [kggCopied, setKggCopied] = useState(false);
 
   const handleKGGImport = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,6 +82,17 @@ export default function AudioOptions() {
             <span className="text-[10px] sm:text-xs text-[var(--text)]">{kggStatus}</span>
           </div>
           {kggError && <p className="text-[10px] text-red-400 break-all">{kggError}</p>}
+
+          <div className="border-t border-[var(--border)] pt-2 space-y-2">
+            <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">手机端粘贴导入密钥</p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">在已导入密钥库的电脑上点击「复制密钥文本」，把内容发送到手机后粘贴到下方即可。</p>
+            <textarea value={kggText} onChange={(e) => setKggText(e.target.value)} placeholder='粘贴密钥 JSON 文本，如 {"keyId":"EncryptionKey",...}' rows={4} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-[10px] sm:text-xs text-[var(--text-strong)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[#00d4ff]/50 resize-y font-mono" />
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={handleKGGPasteImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium bg-[#00d4ff] text-[#0f1724] hover:bg-[#00d4ff]/90 transition-all">粘贴导入</button>
+              <button onClick={handleKGGCopy} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 transition-all">{kggCopied ? '已复制' : '复制密钥文本'}</button>
+            </div>
+            {kggPasteError && <p className="text-[10px] text-red-400 break-all">{kggPasteError}</p>}
+          </div>
         </div>
       )}
 

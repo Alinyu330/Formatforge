@@ -276,9 +276,8 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
       decryptFormat = task.fileName.split('.').pop()?.toLowerCase() || '';
       onProgress(30);
     } else {
-      console.warn(`${task.fileName} 扩展名匹配加密格式但文件头不匹配，跳过解密`);
-      inputData = raw;
-      onProgress(10);
+      console.warn(`${task.fileName} 扩展名匹配加密格式但文件头不匹配`);
+      throw new Error('无法识别该文件的加密格式（文件头不匹配），可能是暂不支持的 QQ 音乐新版本加密格式');
     }
     }
   } else {
@@ -340,6 +339,11 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
   console.log(`[FFmpeg] ${task.fileName} → ${task.targetFormat}: outputSize=${outputSize} args=${args.join(' ')}`);
   if (outputSize === 0) {
     console.error(`[FFmpeg] 输出为 0B! stderr:`, ffLogs);
+    const tail = ffLogs.slice(-8).join(' | ');
+    throw new Error(
+      `转换输出为空（0B）${wasDecrypted ? `，源已解密为 ${actualSourceFormat}` : '，源文件未能正确解密'}` +
+      (tail ? `。FFmpeg 日志：${tail}` : '')
+    );
   }
   const mimeMap: Record<string, string> = {
     mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
