@@ -42,6 +42,7 @@ interface ConvertState {
   setFormatsForSelected: (formats: string[]) => void;
   setAudioOptions: (opts: Partial<AudioOptions>) => void;
   setImageOptions: (opts: Partial<ImageOptions>) => void;
+  setVideoOptions: (opts: Partial<VideoOptions>) => void;
   setPdfMergeOptions: (opts: Partial<PdfMergeOptions>) => void;
   setCurrentType: (type: ConvertType) => void;
   startConversion: () => Promise<void>;
@@ -124,7 +125,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
   currentType: 'audio' as ConvertType,
   audioOptions: { bitrate: '256k', sampleRate: 44100, qmCredentials: { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' } },
   imageOptions: { quality: 0.92 },
-  videoOptions: { videoCodec: 'libx264', audioCodec: 'aac', videoBitrate: '2500k', audioBitrate: '192k' },
+  videoOptions: { videoCodec: 'libx264', audioCodec: 'aac', videoBitrate: '2500k', audioBitrate: '192k', preset: 'veryfast', quality: 'medium', resolution: 'original' },
   pdfMergeOptions: { orientation: 'auto', margin: 0 },
   previewTaskId: null,
   previewItemId: null,
@@ -236,6 +237,10 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
 
   setImageOptions: (opts) => {
     set((s) => ({ imageOptions: { ...s.imageOptions, ...opts } }));
+  },
+
+  setVideoOptions: (opts) => {
+    set((s) => ({ videoOptions: { ...s.videoOptions, ...opts } }));
   },
 
   setPdfMergeOptions: (opts) => {

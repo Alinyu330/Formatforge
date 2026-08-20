@@ -22,11 +22,18 @@ export interface AudioOptions {
   sampleRate: number;
   qmCredentials?: QmAudioCredentials;
 }
+export type VideoPreset = 'ultrafast' | 'superfast' | 'veryfast' | 'faster' | 'fast' | 'medium';
+export type VideoQuality = 'high' | 'medium' | 'low';
+export type VideoResolution = 'original' | '1080p' | '720p' | '480p';
+
 export interface VideoOptions {
   videoCodec: string;
   audioCodec: string;
   videoBitrate: string;
   audioBitrate: string;
+  preset: VideoPreset;
+  quality: VideoQuality;
+  resolution: VideoResolution;
   width?: number;
   height?: number;
 }

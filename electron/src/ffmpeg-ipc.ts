@@ -64,7 +64,7 @@ function buildVideoArgs(
   inputPath: string,
   outputPath: string,
   targetFormat: string,
-  options?: { videoBitrate?: string; audioBitrate?: string; width?: number; height?: number },
+  options?: { videoBitrate?: string; audioBitrate?: string; width?: number; height?: number; preset?: string; quality?: string; resolution?: string },
 ): string[] {
   const videoCodecMap: Record<string, string> = {
     mp4: 'libx264', mkv: 'libx264', mov: 'libx264', avi: 'mpeg4',
@@ -78,15 +78,32 @@ function buildVideoArgs(
     ts: 'aac', ogv: 'libvorbis', webm: 'libopus',
   };
 
-  const args = [
-    '-i', inputPath,
-    '-c:v', videoCodecMap[targetFormat] || 'libx264',
-    '-c:a', audioCodecMap[targetFormat] || 'aac',
-    '-b:v', options?.videoBitrate || '2500k',
-    '-b:a', options?.audioBitrate || '192k',
-  ];
+  const videoCodec = videoCodecMap[targetFormat] || 'libx264';
+  const audioCodec = audioCodecMap[targetFormat] || 'aac';
+  const preset = options?.preset || 'veryfast';
+  const quality = options?.quality || 'medium';
 
-  if (options?.width && options?.height) {
+  const args = ['-i', inputPath, '-c:v', videoCodec, '-c:a', audioCodec];
+
+  // 质量映射：libx264 / VP9 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
+  const CRF: Record<string, string> = { high: '18', medium: '23', low: '28' };
+  const BITRATE: Record<string, string> = { high: '4000k', medium: '2500k', low: '1500k' };
+
+  if (videoCodec === 'libx264') {
+    args.push('-preset', preset, '-crf', CRF[quality]);
+  } else if (videoCodec === 'libvpx-vp9') {
+    args.push('-deadline', 'realtime', '-cpu-used', '8', '-crf', CRF[quality], '-b:v', '0');
+  } else {
+    args.push('-b:v', BITRATE[quality]);
+  }
+
+  args.push('-b:a', options?.audioBitrate || '192k');
+
+  const resolution = options?.resolution || 'original';
+  if (resolution !== 'original') {
+    const height = resolution === '1080p' ? 1080 : resolution === '720p' ? 720 : 480;
+    args.push('-vf', `scale=-2:${height}`);
+  } else if (options?.width && options?.height) {
     args.push('-vf', `scale=${options.width}:${options.height}`);
   }
 

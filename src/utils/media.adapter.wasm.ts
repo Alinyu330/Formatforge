@@ -372,26 +372,36 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
 
   const videoCodec = videoCodecMap[task.targetFormat] || 'libx264';
   const audioCodec = videoAudioCodecMap[task.targetFormat] || 'aac';
+  const preset = task.videoOptions?.preset || 'veryfast';
+  const quality = task.videoOptions?.quality || 'medium';
   const args = [
     '-i', inputName,
     '-c:v', videoCodec,
     '-c:a', audioCodec,
   ];
 
-  // 速度优化：libx264 默认 preset「medium」较慢，改用 veryfast 可大幅提速；
-  // VP9（webm）改用 realtime 模式 + cpu-used 8，显著加快编码。
+  // 质量映射：libx264 / VP9 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
+  const CRF: Record<string, string> = { high: '18', medium: '23', low: '28' };
+  const BITRATE: Record<string, string> = { high: '4000k', medium: '2500k', low: '1500k' };
+
   if (videoCodec === 'libx264') {
-    args.push('-preset', 'veryfast');
+    // preset 控制编码速度（ultrafast 最快，medium 质量最好）；CRF 控制质量
+    args.push('-preset', preset, '-crf', CRF[quality]);
   } else if (videoCodec === 'libvpx-vp9') {
-    args.push('-deadline', 'realtime', '-cpu-used', '8');
+    // VP9 默认极慢，realtime + cpu-used 8 大幅提速
+    args.push('-deadline', 'realtime', '-cpu-used', '8', '-crf', CRF[quality], '-b:v', '0');
+  } else {
+    args.push('-b:v', BITRATE[quality]);
   }
 
-  args.push(
-    '-b:v', task.videoOptions?.videoBitrate || '2500k',
-    '-b:a', task.videoOptions?.audioBitrate || '192k',
-  );
+  args.push('-b:a', task.videoOptions?.audioBitrate || '192k');
 
-  if (task.videoOptions?.width && task.videoOptions?.height) {
+  // 分辨率：仅缩放到目标高度并保持宽高比（避免放大小视频导致模糊）
+  const resolution = task.videoOptions?.resolution || 'original';
+  if (resolution !== 'original') {
+    const height = resolution === '1080p' ? 1080 : resolution === '720p' ? 720 : 480;
+    args.push('-vf', `scale=-2:${height}`);
+  } else if (task.videoOptions?.width && task.videoOptions?.height) {
     args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}`);
   }
 

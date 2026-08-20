@@ -116,6 +116,9 @@ async function convertNative(
   } else if (fileType === 'video' && task.videoOptions) {
     options.videoBitrate = task.videoOptions.videoBitrate;
     options.audioBitrate = task.videoOptions.audioBitrate;
+    options.preset = task.videoOptions.preset;
+    options.quality = task.videoOptions.quality;
+    options.resolution = task.videoOptions.resolution;
     options.width = task.videoOptions.width;
     options.height = task.videoOptions.height;
   }
