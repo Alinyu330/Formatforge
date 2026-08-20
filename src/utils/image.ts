@@ -51,7 +51,7 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
 }
 
 /** 将多张图片按顺序渲染到画布，返回画布数组（每张应用尺寸约束） */
-function renderImageToCanvas(file: File, options?: ImageOptions, rotation = 0): Promise<HTMLCanvasElement> {
+export function renderImageToCanvas(file: File, options?: ImageOptions, rotation = 0): Promise<HTMLCanvasElement> {
   return loadImage(file).then((img) => {
     const canvas = document.createElement('canvas');
     let width = img.width;
@@ -115,6 +115,21 @@ function computePdfPage(w: number, h: number, margin: number, orientation: PdfMe
   };
 }
 
+/** 将图片等比缩放并居中绘制到统一的页面尺寸上 */
+function fitIntoPage(w: number, h: number, page: [number, number], margin: number): PdfPageLayout {
+  const [pw, ph] = page;
+  const availW = pw - margin * 2;
+  const availH = ph - margin * 2;
+  const scale = Math.min(availW / w, availH / h);
+  const dw = w * scale;
+  const dh = h * scale;
+  return {
+    page: [pw, ph],
+    pageOrientation: pw > ph ? 'l' : 'p',
+    draw: { x: (pw - dw) / 2, y: (ph - dh) / 2, w: dw, h: dh },
+  };
+}
+
 /** 将多张图片合并为一个多页 PDF 文件 */
 export async function convertImagesToPdf(
   tasks: ConvertTask[],
@@ -126,6 +141,7 @@ export async function convertImagesToPdf(
   const quality = options?.quality ?? 0.92;
   const margin = Math.max(0, pdfOptions.margin ?? 0);
   const orientation = pdfOptions.orientation ?? 'auto';
+  const uniformSize = pdfOptions.uniformSize ?? false;
   const total = tasks.length;
 
   const canvases: HTMLCanvasElement[] = [];
@@ -134,11 +150,27 @@ export async function convertImagesToPdf(
     onProgress(Math.round(((i + 1) / total) * 80));
   }
 
+  // 统一尺寸：以所有图片的最大宽/高为基准，得到一致的页面尺寸
+  let uniformPage: [number, number] | null = null;
+  if (uniformSize && canvases.length > 0) {
+    const maxW = Math.max(...canvases.map((c) => c.width));
+    const maxH = Math.max(...canvases.map((c) => c.height));
+    if (orientation === 'portrait') {
+      uniformPage = [Math.min(maxW, maxH), Math.max(maxW, maxH)];
+    } else if (orientation === 'landscape') {
+      uniformPage = [Math.max(maxW, maxH), Math.min(maxW, maxH)];
+    } else {
+      uniformPage = [maxW, maxH];
+    }
+  }
+
   let pdf: InstanceType<typeof jsPDF> | null = null;
 
   canvases.forEach((canvas, idx) => {
     const dataUrl = canvas.toDataURL('image/jpeg', quality);
-    const layout = computePdfPage(canvas.width, canvas.height, margin, orientation);
+    const layout = uniformPage
+      ? fitIntoPage(canvas.width, canvas.height, uniformPage, margin)
+      : computePdfPage(canvas.width, canvas.height, margin, orientation);
 
     if (idx === 0) {
       pdf = new jsPDF({ orientation: layout.pageOrientation, unit: 'px', format: layout.page });

@@ -224,7 +224,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
   audioOptions: { bitrate: '256k', sampleRate: 44100, qmCredentials: { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' } },
   imageOptions: { quality: 0.92 },
   videoOptions: { videoCodec: 'libx264', audioCodec: 'aac', videoBitrate: '2500k', audioBitrate: '192k', preset: 'veryfast', quality: 'medium', resolution: 'original' },
-  pdfMergeOptions: { orientation: 'auto', margin: 0 },
+  pdfMergeOptions: { orientation: 'auto', margin: 0, uniformSize: false },
   previewTaskId: null,
   previewItemId: null,
   previewSource: false,

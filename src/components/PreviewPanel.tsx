@@ -3,6 +3,7 @@ import { X, Download, Play, Pause } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
+import { renderImageToCanvas } from '@/utils/image';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
@@ -17,6 +18,7 @@ export default function PreviewPanel() {
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [sourceUrl, setSourceUrl] = useState('');
+  const [rotatedUrl, setRotatedUrl] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
 
@@ -34,6 +36,20 @@ export default function PreviewPanel() {
     }
     setSourceUrl('');
   }, [isSource, previewTaskId]);
+
+  // 图片源文件旋转预览：按当前旋转角度渲染出预览图
+  useEffect(() => {
+    let cancelled = false;
+    const rotation = task?.rotation ?? 0;
+    if (isSource && task?.convertType === 'image' && rotation !== 0) {
+      renderImageToCanvas(task.sourceFile, task.imageOptions, rotation)
+        .then((canvas) => { if (!cancelled) setRotatedUrl(canvas.toDataURL('image/png')); })
+        .catch(() => { if (!cancelled) setRotatedUrl(''); });
+    } else {
+      setRotatedUrl('');
+    }
+    return () => { cancelled = true; };
+  }, [isSource, previewTaskId, task?.rotation]);
 
   // 当前预览的目标：结果或源文件
   const previewFormat = (isSource ? task.sourceFormat : item?.targetFormat || '').toLowerCase();
@@ -158,7 +174,7 @@ export default function PreviewPanel() {
           <video src={previewUrl} controls className="w-full max-h-full rounded-lg" />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
-            <img src={previewUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
+            <img src={isSource && rotatedUrl ? rotatedUrl : previewUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
           </div>
         ) : isPdf ? (
           <div className="space-y-4">

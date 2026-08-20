@@ -43,6 +43,18 @@ export default function PdfMergeOptions() {
         />
         <span className="text-[9px] sm:text-[10px] text-[var(--text-faint)]">px</span>
       </div>
+
+      <button
+        onClick={() => setPdfMergeOptions({ uniformSize: !pdfMergeOptions.uniformSize })}
+        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs transition-colors ${
+          pdfMergeOptions.uniformSize
+            ? 'bg-[#00d4ff] text-[#0f1724] border-[#00d4ff]'
+            : 'text-[var(--text-muted)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-hover)] border-[var(--border)]'
+        }`}
+        title="开启后所有图片合并为一致的页面尺寸"
+      >
+        统一尺寸
+      </button>
     </div>
   );
 }
