@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { ConvertTask, ConvertType, ConvertItem, TaskStatus, AudioOptions, ImageOptions, VideoOptions, PdfMergeOptions } from '@/types';
-import { MAX_CONCURRENT } from '@/types';
 import { getFileExtension, resolveAudioExtension, generateId, stripExtension } from '@/utils/format';
 import { convertAudio } from '@/utils/audio';
 import { convertVideo } from '@/utils/video';
@@ -9,6 +8,13 @@ import { convertImage, convertImagesToPdf } from '@/utils/image';
 import { convertDocument } from '@/utils/document';
 import { convertPdf } from '@/utils/pdf';
 import { preloadMediaEngine } from '@/utils/media.adapter.factory';
+
+// ============== 并发调度 ==============
+// 音频/视频共用同一个 FFmpeg WASM 实例，必须串行执行以避免竞态
+let mediaRunning = false;
+// 图片/表格/办公/PDF 转换相互独立，可并行提升多文件吞吐
+let nonMediaRunning = 0;
+const NON_MEDIA_CONCURRENCY = 4;
 
 /** 全局转换超时：15 分钟（视频转换在 WASM 中可能非常耗时） */
 const TASK_TIMEOUT_MS = 900000;
@@ -22,7 +28,6 @@ function withTimeout<T>(promise: Promise<T>, fileName: string): Promise<T> {
 
 interface ConvertState {
   tasks: ConvertTask[];
-  isProcessing: boolean;
   audioOptions: AudioOptions;
   imageOptions: ImageOptions;
   videoOptions: VideoOptions;
@@ -45,7 +50,7 @@ interface ConvertState {
   setVideoOptions: (opts: Partial<VideoOptions>) => void;
   setPdfMergeOptions: (opts: Partial<PdfMergeOptions>) => void;
   setCurrentType: (type: ConvertType) => void;
-  startConversion: () => Promise<void>;
+  startConversion: () => void;
   downloadItem: (taskId: string, itemId: string) => void;
   downloadTask: (taskId: string) => void;
   downloadAllAsZip: () => Promise<void>;
@@ -119,9 +124,96 @@ function getMimeType(targetFormat: string, sourceFormat: string): string {
   }
 }
 
-export const useConvertStore = create<ConvertState>((set, get) => ({
+export const useConvertStore = create<ConvertState>((set, get) => {
+  // 标记某个转换项的状态/进度
+  const markItem = (taskId: string, itemId: string, patch: Partial<ConvertItem>) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, items: t.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }
+          : t
+      ),
+    }));
+  };
+
+  // 执行单个转换项（媒体/非媒体通用）
+  const convertOne = async (task: ConvertTask, item: ConvertItem) => {
+    const converter = getConversionHandler(task);
+    try {
+      const opts = get();
+      const taskWithOpts = {
+        ...task,
+        targetFormat: item.targetFormat,
+        sourceFormat: task.sourceFormat,
+        targetFormats: [item.targetFormat],
+        audioOptions: opts.audioOptions,
+        imageOptions: opts.imageOptions,
+        videoOptions: opts.videoOptions,
+      };
+
+      if (!converter) throw new Error('不支持的转换类型');
+      const blob = await withTimeout(
+        converter(taskWithOpts as any, (progress: number) => {
+          markItem(task.id, item.id, { progress });
+        }),
+        task.fileName,
+      );
+
+      const url = URL.createObjectURL(blob);
+      set((s) => {
+        const shouldPreview = !s.previewTaskId && !s.previewItemId;
+        return {
+          tasks: s.tasks.map((t) =>
+            t.id === task.id
+              ? { ...t, items: t.items.map((i) => (i.id === item.id ? { ...i, status: 'done' as TaskStatus, progress: 100, resultBlob: blob, resultUrl: url } : i)) }
+              : t
+          ),
+          previewTaskId: shouldPreview ? task.id : s.previewTaskId,
+          previewItemId: shouldPreview ? item.id : s.previewItemId,
+          sidebarOpen: true,
+        };
+      });
+    } catch (err: any) {
+      console.warn('[Convert] 转换失败:', task.fileName, '→', item.targetFormat, err);
+      markItem(task.id, item.id, { status: 'error' as TaskStatus, error: err.message || '转换失败' });
+    }
+  };
+
+  // 启动单个转换项，完成后释放槽位并继续调度
+  const startOne = (task: ConvertTask, item: ConvertItem) => {
+    const isMedia = task.convertType === 'audio' || task.convertType === 'video';
+    if (isMedia) mediaRunning = true;
+    else nonMediaRunning += 1;
+
+    markItem(task.id, item.id, { status: 'converting' as TaskStatus });
+
+    convertOne(task, item).finally(() => {
+      if (isMedia) mediaRunning = false;
+      else nonMediaRunning -= 1;
+      pump();
+    });
+  };
+
+  // 调度器：在并发上限内尽量启动所有 pending 项
+  const pump = () => {
+    const state = get();
+    if (mediaRunning && nonMediaRunning >= NON_MEDIA_CONCURRENCY) return;
+    for (const task of state.tasks) {
+      for (const item of task.items) {
+        if (item.status !== 'pending') continue;
+        const isMedia = task.convertType === 'audio' || task.convertType === 'video';
+        if (isMedia) {
+          if (mediaRunning) continue;
+        } else if (nonMediaRunning >= NON_MEDIA_CONCURRENCY) {
+          continue;
+        }
+        startOne(task, item);
+      }
+    }
+  };
+
+  return {
   tasks: [],
-  isProcessing: false,
   currentType: 'audio' as ConvertType,
   audioOptions: { bitrate: '256k', sampleRate: 44100, qmCredentials: { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' } },
   imageOptions: { quality: 0.92 },
@@ -257,109 +349,8 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     set((s) => ({ sidebarOpen: !s.sidebarOpen }));
   },
 
-  startConversion: async () => {
-    const state = get();
-    if (state.isProcessing) return;
-
-    const pendingItems: { task: ConvertTask; item: ConvertItem }[] = [];
-    for (const task of state.tasks) {
-      for (const item of task.items) {
-        if (item.status === 'pending') {
-          pendingItems.push({ task, item });
-          if (pendingItems.length >= MAX_CONCURRENT) break;
-        }
-      }
-      if (pendingItems.length >= MAX_CONCURRENT) break;
-    }
-
-    if (pendingItems.length === 0) return;
-
-    set({ isProcessing: true });
-
-    try {
-      for (const { task, item } of pendingItems) {
-        const converter = getConversionHandler(task);
-        set((s) => ({
-          tasks: s.tasks.map((t) => {
-            if (t.id !== task.id) return t;
-            return {
-              ...t,
-              items: t.items.map((i) =>
-                i.id === item.id ? { ...i, status: 'converting' as TaskStatus } : i
-              ),
-            };
-          }),
-        }));
-
-        try {
-          const taskWithOpts = {
-            ...task,
-            targetFormat: item.targetFormat,
-            sourceFormat: task.sourceFormat,
-            targetFormats: [item.targetFormat],
-            audioOptions: state.audioOptions,
-            imageOptions: state.imageOptions,
-            videoOptions: state.videoOptions,
-          };
-
-          if (!converter) throw new Error('不支持的转换类型');
-          const blob = await withTimeout(
-            converter(taskWithOpts as any, (progress) => {
-              set((s) => ({
-                tasks: s.tasks.map((t) => {
-                  if (t.id !== task.id) return t;
-                  return {
-                    ...t,
-                    items: t.items.map((i) =>
-                      i.id === item.id ? { ...i, progress } : i
-                    ),
-                  };
-                }),
-              }));
-            }),
-            task.fileName,
-          );
-
-          const url = URL.createObjectURL(blob);
-          set((s) => {
-            const shouldPreview = !s.previewTaskId && !s.previewItemId;
-            return {
-              tasks: s.tasks.map((t) => {
-                if (t.id !== task.id) return t;
-                return {
-                  ...t,
-                  items: t.items.map((i) =>
-                    i.id === item.id
-                      ? { ...i, status: 'done' as TaskStatus, progress: 100, resultBlob: blob, resultUrl: url }
-                      : i
-                  ),
-                };
-              }),
-              previewTaskId: shouldPreview ? task.id : s.previewTaskId,
-              previewItemId: shouldPreview ? item.id : s.previewItemId,
-              sidebarOpen: true,
-            };
-          });
-        } catch (err: any) {
-          console.warn('[Convert] 转换失败:', task.fileName, '→', item.targetFormat, err);
-          set((s) => ({
-            tasks: s.tasks.map((t) => {
-              if (t.id !== task.id) return t;
-              return {
-                ...t,
-                items: t.items.map((i) =>
-                  i.id === item.id
-                    ? { ...i, status: 'error' as TaskStatus, error: err.message || '转换失败' }
-                    : i
-                ),
-              };
-            }),
-          }));
-        }
-      }
-    } finally {
-      set({ isProcessing: false });
-    }
+  startConversion: () => {
+    pump();
   },
 
   downloadItem: (taskId: string, itemId: string) => {
@@ -421,7 +412,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
   mergeImagesToPdf: async () => {
     const state = get();
     const imageTasks = state.tasks.filter((t) => t.convertType === 'image');
-    if (imageTasks.length < 2 || state.isProcessing) return;
+    if (imageTasks.length < 2) return;
 
     const files = imageTasks.map((t) => t.sourceFile);
     const taskId = generateId();
@@ -430,7 +421,6 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     const totalSize = files.reduce((n, f) => n + f.size, 0);
 
     set((s) => ({
-      isProcessing: true,
       tasks: [
         ...s.tasks,
         {
@@ -495,8 +485,6 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
             : t
         ),
       }));
-    } finally {
-      set({ isProcessing: false });
     }
   },
 
@@ -505,4 +493,5 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     get().tasks.forEach((task) => task.items.forEach((item) => { counts[item.status]++; }));
     return counts;
   },
-}));
+  };
+});

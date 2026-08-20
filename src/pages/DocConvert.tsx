@@ -7,11 +7,12 @@ import { useConvertStore } from '@/store/convertStore';
 import { getFileExtension, SHEET_EXTENSIONS, WORD_EXTENSIONS, POWERPOINT_EXTENSIONS } from '@/utils/format';
 
 export default function DocConvert() {
-  const { tasks, isProcessing, addFiles, clearTasks, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
+  const { tasks, addFiles, clearTasks, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
 
   useEffect(() => { setCurrentType('document'); }, [setCurrentType]);
 
   const pendingCount = tasks.reduce((sum, task) => sum + task.items.filter((item) => item.status === 'pending').length, 0);
+  const convertingCount = tasks.reduce((sum, task) => sum + task.items.filter((item) => item.status === 'converting').length, 0);
   const doneCount = tasks.reduce((sum, task) => sum + task.items.filter((item) => item.status === 'done').length, 0);
 
   const handleFiles = (files: File[]) => {
@@ -34,20 +35,19 @@ export default function DocConvert() {
         </div>
 
         <FileUpload type="document" onFilesAdd={handleFiles}
-          accept=".pdf,.xlsx,.xls,.csv,.ods,.html,.htm,.docx,.pptx"
-          disabled={isProcessing} />
+          accept=".pdf,.xlsx,.xls,.csv,.ods,.html,.htm,.docx,.pptx" />
 
         <ConvertQueue />
 
         {tasks.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <button onClick={startConversion} disabled={isProcessing || pendingCount === 0}
+            <button onClick={startConversion} disabled={pendingCount === 0}
               className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-[#10b981] text-white hover:bg-[#10b981]/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_25px_rgba(16,185,129,0.2)]">
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" />
-              {isProcessing ? '转换中...' : `开始转换 (${pendingCount})`}
+              {convertingCount > 0 ? '转换中...' : `开始转换 (${pendingCount})`}
             </button>
             {doneCount > 0 && <button onClick={downloadAllAsZip} className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[#10b981]/30 text-[#10b981] hover:bg-[#10b981]/10 transition-all"><Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />打包下载全部 ({doneCount})</button>}
-            <button onClick={clearTasks} disabled={isProcessing} className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-30">清空列表</button>
+            <button onClick={clearTasks} className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-colors">清空列表</button>
           </div>
         )}
       </div>

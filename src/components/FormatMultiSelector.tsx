@@ -12,6 +12,8 @@ interface Props {
 }
 
 export default function FormatMultiSelector({ formats, selected, onChange }: Props) {
+  const allSelected = formats.length > 0 && formats.every((f) => selected.includes(f.value));
+
   const toggle = (fmt: string) => {
     if (selected.includes(fmt)) {
       onChange(selected.filter((f) => f !== fmt));
@@ -20,8 +22,26 @@ export default function FormatMultiSelector({ formats, selected, onChange }: Pro
     }
   };
 
+  const toggleAll = () => {
+    if (allSelected) {
+      onChange([]);
+    } else {
+      onChange(formats.map((f) => f.value));
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-1.5">
+      <button
+        onClick={toggleAll}
+        className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-[11px] font-medium transition-all duration-200
+          ${allSelected
+            ? 'bg-[#00d4ff]/15 border border-[#00d4ff]/40 text-[#00d4ff]'
+            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)]'
+          }`}
+      >
+        {allSelected ? '取消全选' : '全选'}
+      </button>
       {formats.map((fmt) => {
         const isSelected = selected.includes(fmt.value);
         return (
