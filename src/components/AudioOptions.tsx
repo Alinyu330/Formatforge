@@ -48,6 +48,32 @@ export default function AudioOptions() {
     }
   };
 
+  const handleKGGPasteImport = () => {
+    setKggPasteError('');
+    setKggError('');
+    try {
+      const count = importKugouKeyMapFromText(kggText);
+      setKggStatus(`已加载 ${count} 个密钥`);
+      setKggText('');
+    } catch (err) {
+      setKggStatus('密钥文本导入失败');
+      setKggPasteError(err instanceof Error ? err.message : '密钥文本导入失败');
+    }
+  };
+
+  const handleKGGCopy = async () => {
+    setKggPasteError('');
+    try {
+      const text = exportKugouKeyMap();
+      await navigator.clipboard.writeText(text);
+      setKggCopied(true);
+      setTimeout(() => setKggCopied(false), 2000);
+    } catch (err) {
+      setKggCopied(false);
+      setKggPasteError(err instanceof Error ? err.message : '复制失败');
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2 sm:gap-3 items-center">

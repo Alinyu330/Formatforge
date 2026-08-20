@@ -12,7 +12,7 @@ import type { ConvertTask } from '@/types';
 import { isQMCFile, decryptQMC, decryptMusicexWithEkey, fetchEkeyFromAPI, isValidQMCHeader, isMusicexFormat, MusicexNeedsEkeyError, parseMusicexFooter } from './qmc';
 import { isNCMFile, decryptNCM, isValidNCMHeader } from './ncm';
 import { isKGMFile, decryptKGM, isValidKGMHeader } from './kgm';
-import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb } from './kgg';
+import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount } from './kgg';
 
 // Cloudflare Pages 单文件上限 25MiB，而 ffmpeg-core.wasm 约 31MB，
 // 需通过环境变量 VITE_FFMPEG_WASM_URL 托管到外部（如 Cloudflare R2）；未设置时回退到打包内置的 wasm。
@@ -205,8 +205,9 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
       }
       const keyId = extractKGGKeyId(raw);
       const encryptionKey = getKugouKey(keyId);
+      console.log('[diag] KGG: keyId=', keyId, 'keyCount=', getKugouKeyCount(), 'hasKey=', !!encryptionKey);
       if (!encryptionKey) {
-        throw new Error('密钥库中未找到该 KGG 文件的解密密钥，请确认密钥库来自下载该歌曲的酷狗账号');
+        throw new Error(`密钥库中未找到该 KGG 文件的解密密钥（keyId: ${keyId}），请确认密钥库来自下载该歌曲的酷狗账号，且密钥库为最新版本`);
       }
       const result = decryptKGG(raw, encryptionKey);
       inputData = result.data;
