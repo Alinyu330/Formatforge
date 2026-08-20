@@ -370,13 +370,26 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   await ff.writeFile(inputName, await fetchFile(task.sourceFile));
   onProgress(5);
 
+  const videoCodec = videoCodecMap[task.targetFormat] || 'libx264';
+  const audioCodec = videoAudioCodecMap[task.targetFormat] || 'aac';
   const args = [
     '-i', inputName,
-    '-c:v', videoCodecMap[task.targetFormat] || 'libx264',
-    '-c:a', videoAudioCodecMap[task.targetFormat] || 'aac',
+    '-c:v', videoCodec,
+    '-c:a', audioCodec,
+  ];
+
+  // 速度优化：libx264 默认 preset「medium」较慢，改用 veryfast 可大幅提速；
+  // VP9（webm）改用 realtime 模式 + cpu-used 8，显著加快编码。
+  if (videoCodec === 'libx264') {
+    args.push('-preset', 'veryfast');
+  } else if (videoCodec === 'libvpx-vp9') {
+    args.push('-deadline', 'realtime', '-cpu-used', '8');
+  }
+
+  args.push(
     '-b:v', task.videoOptions?.videoBitrate || '2500k',
     '-b:a', task.videoOptions?.audioBitrate || '192k',
-  ];
+  );
 
   if (task.videoOptions?.width && task.videoOptions?.height) {
     args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}`);
