@@ -9,7 +9,7 @@ import { getFFmpeg } from './media.adapter.wasm';
 import { isQMCFile, decryptQMC } from './qmc';
 import { isNCMFile, decryptNCM } from './ncm';
 import { isKGMFile, decryptKGM } from './kgm';
-import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb } from './kgg';
+import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount } from './kgg';
 
 // Android 设备可能性能较弱，使用更长的超时时间
 const ANDROID_LOAD_TIMEOUT_MS = 120000;    // 2分钟（旧设备 WASM 编译慢）
@@ -97,8 +97,9 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     }
     const keyId = extractKGGKeyId(raw);
     const encryptionKey = getKugouKey(keyId);
+    console.log('[diag] KGG: keyId=', keyId, 'keyCount=', getKugouKeyCount(), 'hasKey=', !!encryptionKey);
     if (!encryptionKey) {
-      throw new Error('密钥库中未找到该 KGG 文件的解密密钥，请确认密钥库来自下载该歌曲的酷狗账号');
+      throw new Error(`密钥库中未找到该 KGG 文件的解密密钥（keyId: ${keyId}），请确认密钥库来自下载该歌曲的酷狗账号，且密钥库为最新版本`);
     }
     const result = decryptKGG(raw, encryptionKey);
     inputData = result.data;

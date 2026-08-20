@@ -165,3 +165,9 @@ export function hasKugouKeyDb(): boolean {
 export function getKugouKeyCount(): number {
   return Object.keys(ensureKeyMap() ?? {}).length;
 }
+
+/** 列出当前密钥库中的所有 keyId（用于诊断账号是否匹配） */
+export function listKugouKeyIds(): string[] {
+  const map = ensureKeyMap() ?? {};
+  return Object.keys(map).sort();
+}

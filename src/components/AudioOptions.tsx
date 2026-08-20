@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useConvertStore } from '@/store/convertStore';
 import { KUGOU_MUSIC_ENCRYPTED_EXTENSIONS, NETEASE_MUSIC_ENCRYPTED_EXTENSIONS, isQQMusicEncryptedExt } from '@/utils/format';
-import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb, exportKugouKeyMap, importKugouKeyMapFromText } from '@/utils/kgg';
+import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb, exportKugouKeyMap, importKugouKeyMapFromText, listKugouKeyIds } from '@/utils/kgg';
 
 function readCookieValue(rawCookie: string, key: string): string {
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -119,6 +119,18 @@ export default function AudioOptions() {
             </div>
             {kggPasteError && <p className="text-[10px] text-red-400 break-all">{kggPasteError}</p>}
           </div>
+
+          <details className="border-t border-[var(--border)] pt-2">
+            <summary className="cursor-pointer text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text-strong)] select-none">查看已加载密钥 ID（{getKugouKeyCount()} 个）</summary>
+            <div className="mt-2 max-h-40 overflow-auto rounded bg-[var(--surface)] border border-[var(--border)] p-2 space-y-0.5">
+              {(() => {
+                const ids = listKugouKeyIds();
+                return ids.length === 0
+                  ? <p className="text-[9px] text-[var(--text-faint)]">暂无密钥</p>
+                  : ids.map((id) => <div key={id} className="font-mono text-[9px] text-[var(--text)] break-all leading-relaxed">{id}</div>);
+              })()}
+            </div>
+          </details>
         </div>
       )}
 
