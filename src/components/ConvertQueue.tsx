@@ -60,7 +60,7 @@ export default function ConvertQueue() {
             className="rounded-lg bg-[var(--surface)] border border-[var(--border)] px-2 py-1 text-[11px] sm:text-xs text-[var(--text-strong)] outline-none focus:border-[#00d4ff]"
           >
             {batchFormats.map((f) => (
-              <option key={f.value} value={f.value}>{f.label}</option>
+              <option key={f.value} value={f.value} className="text-[#0f1724] bg-white">{f.label}</option>
             ))}
           </select>
           <button
