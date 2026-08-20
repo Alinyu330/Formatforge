@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import type { ConvertTask, ConvertType, ConvertItem, TaskStatus, AudioOptions, ImageOptions, VideoOptions } from '@/types';
+import type { ConvertTask, ConvertType, ConvertItem, TaskStatus, AudioOptions, ImageOptions, VideoOptions, PdfMergeOptions } from '@/types';
 import { MAX_CONCURRENT } from '@/types';
 import { getFileExtension, resolveAudioExtension, generateId } from '@/utils/format';
 import { convertAudio } from '@/utils/audio';
 import { convertVideo } from '@/utils/video';
 import { convertSheet } from '@/utils/sheet';
-import { convertImage } from '@/utils/image';
+import { convertImage, convertImagesToPdf } from '@/utils/image';
 import { convertDocument } from '@/utils/document';
 import { convertPdf } from '@/utils/pdf';
 import { preloadMediaEngine } from '@/utils/media.adapter.factory';
@@ -26,6 +26,7 @@ interface ConvertState {
   audioOptions: AudioOptions;
   imageOptions: ImageOptions;
   videoOptions: VideoOptions;
+  pdfMergeOptions: PdfMergeOptions;
   currentType: ConvertType;
   previewTaskId: string | null;
   previewItemId: string | null;
@@ -37,11 +38,13 @@ interface ConvertState {
   updateTaskFormats: (id: string, formats: string[]) => void;
   setAudioOptions: (opts: Partial<AudioOptions>) => void;
   setImageOptions: (opts: Partial<ImageOptions>) => void;
+  setPdfMergeOptions: (opts: Partial<PdfMergeOptions>) => void;
   setCurrentType: (type: ConvertType) => void;
   startConversion: () => Promise<void>;
   downloadItem: (taskId: string, itemId: string) => void;
   downloadTask: (taskId: string) => void;
   downloadAllAsZip: () => Promise<void>;
+  mergeImagesToPdf: () => Promise<void>;
 
   setPreviewTask: (taskId: string | null, itemId?: string | null) => void;
   toggleSidebar: () => void;
@@ -118,6 +121,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
   audioOptions: { bitrate: '256k', sampleRate: 44100, qmCredentials: { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' } },
   imageOptions: { quality: 0.92 },
   videoOptions: { videoCodec: 'libx264', audioCodec: 'aac', videoBitrate: '2500k', audioBitrate: '192k' },
+  pdfMergeOptions: { orientation: 'auto', margin: 0 },
   previewTaskId: null,
   previewItemId: null,
   sidebarOpen: false,
@@ -191,6 +195,10 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
 
   setImageOptions: (opts) => {
     set((s) => ({ imageOptions: { ...s.imageOptions, ...opts } }));
+  },
+
+  setPdfMergeOptions: (opts) => {
+    set((s) => ({ pdfMergeOptions: { ...s.pdfMergeOptions, ...opts } }));
   },
 
   setCurrentType: (type) => set({ currentType: type }),
@@ -362,6 +370,87 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  mergeImagesToPdf: async () => {
+    const state = get();
+    const imageTasks = state.tasks.filter((t) => t.convertType === 'image');
+    if (imageTasks.length < 2 || state.isProcessing) return;
+
+    const files = imageTasks.map((t) => t.sourceFile);
+    const taskId = generateId();
+    const itemId = generateId();
+    const fileName = `合并结果 (${files.length} 张图片).pdf`;
+    const totalSize = files.reduce((n, f) => n + f.size, 0);
+
+    set((s) => ({
+      isProcessing: true,
+      tasks: [
+        ...s.tasks,
+        {
+          id: taskId,
+          convertType: 'image' as ConvertType,
+          fileName,
+          fileSize: totalSize,
+          sourceFormat: 'image',
+          targetFormat: 'pdf',
+          sourceFile: files[0],
+          items: [{ id: itemId, targetFormat: 'pdf', status: 'converting' as TaskStatus, progress: 0 }],
+        },
+      ],
+    }));
+
+    try {
+      const blob = await withTimeout(
+        convertImagesToPdf(files, state.imageOptions, state.pdfMergeOptions, (progress) => {
+          set((s) => ({
+            tasks: s.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, items: t.items.map((i) => (i.id === itemId ? { ...i, progress } : i)) }
+                : t
+            ),
+          }));
+        }),
+        fileName,
+      );
+
+      const url = URL.createObjectURL(blob);
+      set((s) => ({
+        tasks: s.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                items: t.items.map((i) =>
+                  i.id === itemId
+                    ? { ...i, status: 'done' as TaskStatus, progress: 100, resultBlob: blob, resultUrl: url }
+                    : i
+                ),
+              }
+            : t
+        ),
+        previewTaskId: s.previewTaskId ?? taskId,
+        previewItemId: s.previewItemId ?? itemId,
+        sidebarOpen: true,
+      }));
+    } catch (err: any) {
+      console.warn('[Convert] 合并 PDF 失败:', err);
+      set((s) => ({
+        tasks: s.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                items: t.items.map((i) =>
+                  i.id === itemId
+                    ? { ...i, status: 'error' as TaskStatus, error: err.message || '合并失败' }
+                    : i
+                ),
+              }
+            : t
+        ),
+      }));
+    } finally {
+      set({ isProcessing: false });
+    }
   },
 
   getTaskCounts: () => {

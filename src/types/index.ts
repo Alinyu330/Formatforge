@@ -31,6 +31,7 @@ export interface VideoOptions {
   height?: number;
 }
 export interface ImageOptions { quality: number; maxWidth?: number; maxHeight?: number; }
+export interface PdfMergeOptions { orientation: 'auto' | 'portrait' | 'landscape'; margin: number; }
 
 export interface ConvertItem {
   id: string;

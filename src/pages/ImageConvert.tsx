@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Play, Archive } from 'lucide-react';
+import { Play, Archive, Layers } from 'lucide-react';
 import ConvertLayout from '@/components/ConvertLayout';
 import FileUpload from '@/components/FileUpload';
 import FormatMultiSelector from '@/components/FormatMultiSelector';
 import ImageOptions from '@/components/ImageOptions';
+import PdfMergeOptions from '@/components/PdfMergeOptions';
 import ConvertQueue from '@/components/ConvertQueue';
 import { useConvertStore } from '@/store/convertStore';
 
@@ -18,7 +19,7 @@ const IMAGE_FORMATS = [
 ];
 
 export default function ImageConvert() {
-  const { tasks, isProcessing, addFiles, clearTasks, updateTaskFormats, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
+  const { tasks, isProcessing, addFiles, clearTasks, updateTaskFormats, startConversion, downloadAllAsZip, mergeImagesToPdf, setCurrentType } = useConvertStore();
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
 
   useEffect(() => { setCurrentType('image'); }, [setCurrentType]);
@@ -53,6 +54,12 @@ export default function ImageConvert() {
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">转换参数</p>
               <ImageOptions />
             </div>
+            {tasks.length >= 2 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">合并 PDF 选项（统一页面方向 / 边距）</p>
+                <PdfMergeOptions />
+              </div>
+            )}
           </>
         )}
 
@@ -69,6 +76,12 @@ export default function ImageConvert() {
               <button onClick={downloadAllAsZip}
                 className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[#f59e0b]/30 text-[#f59e0b] hover:bg-[#f59e0b]/10 transition-all">
                 <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />打包下载全部 ({doneCount})
+              </button>
+            )}
+            {tasks.length >= 2 && (
+              <button onClick={mergeImagesToPdf} disabled={isProcessing}
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />合并为 PDF
               </button>
             )}
             <button onClick={clearTasks} disabled={isProcessing}

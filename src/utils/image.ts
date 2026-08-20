@@ -1,28 +1,9 @@
-import type { ConvertTask } from '@/types';
+import type { ConvertTask, ImageOptions, PdfMergeOptions } from '@/types';
 
 export async function convertImage(task: ConvertTask, onProgress: (p: number) => void): Promise<Blob> {
   onProgress(10);
 
-  const img = await loadImage(task.sourceFile);
-  onProgress(30);
-
-  const canvas = document.createElement('canvas');
-  let { width, height } = img;
-
-  // Apply size constraints
-  if (task.imageOptions?.maxWidth && width > task.imageOptions.maxWidth) {
-    height = Math.round((task.imageOptions.maxWidth / width) * height);
-    width = task.imageOptions.maxWidth;
-  }
-  if (task.imageOptions?.maxHeight && height > task.imageOptions.maxHeight) {
-    width = Math.round((task.imageOptions.maxHeight / height) * width);
-    height = task.imageOptions.maxHeight;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(img, 0, 0, width, height);
+  const canvas = await renderImageToCanvas(task.sourceFile, task.imageOptions);
   onProgress(60);
 
   const quality = task.imageOptions?.quality ?? 0.92;
@@ -30,6 +11,7 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
 
   if (format === 'pdf') {
     const { jsPDF } = await import('jspdf');
+    const { width, height } = canvas;
     const pdf = new jsPDF({ orientation: width > height ? 'l' : 'p', unit: 'px', format: [width, height] });
     pdf.addImage(canvas.toDataURL('image/jpeg', quality), 'JPEG', 0, 0, width, height);
     onProgress(100);
@@ -66,6 +48,98 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
 
   onProgress(100);
   return blob;
+}
+
+/** 将多张图片按顺序渲染到画布，返回画布数组（每张应用尺寸约束） */
+function renderImageToCanvas(file: File, options?: ImageOptions): Promise<HTMLCanvasElement> {
+  return loadImage(file).then((img) => {
+    const canvas = document.createElement('canvas');
+    let { width, height } = img;
+
+    if (options?.maxWidth && width > options.maxWidth) {
+      height = Math.round((options.maxWidth / width) * height);
+      width = options.maxWidth;
+    }
+    if (options?.maxHeight && height > options.maxHeight) {
+      width = Math.round((options.maxHeight / height) * width);
+      height = options.maxHeight;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0, width, height);
+    return canvas;
+  });
+}
+
+interface PdfPageLayout {
+  page: [number, number];
+  pageOrientation: 'l' | 'p';
+  draw: { x: number; y: number; w: number; h: number };
+}
+
+/** 根据页面方向与边距计算每张图片在 PDF 中的页面尺寸和绘制位置 */
+function computePdfPage(w: number, h: number, margin: number, orientation: PdfMergeOptions['orientation']): PdfPageLayout {
+  if (orientation === 'auto') {
+    return {
+      page: [w + margin * 2, h + margin * 2],
+      pageOrientation: w > h ? 'l' : 'p',
+      draw: { x: margin, y: margin, w, h },
+    };
+  }
+
+  const isPortrait = orientation === 'portrait';
+  const pw = isPortrait ? Math.min(w, h) : Math.max(w, h);
+  const ph = isPortrait ? Math.max(w, h) : Math.min(w, h);
+  const availW = pw - margin * 2;
+  const availH = ph - margin * 2;
+  const scale = Math.min(availW / w, availH / h);
+  const dw = w * scale;
+  const dh = h * scale;
+
+  return {
+    page: [pw, ph],
+    pageOrientation: isPortrait ? 'p' : 'l',
+    draw: { x: (pw - dw) / 2, y: (ph - dh) / 2, w: dw, h: dh },
+  };
+}
+
+/** 将多张图片合并为一个多页 PDF 文件 */
+export async function convertImagesToPdf(
+  files: File[],
+  options: ImageOptions | undefined,
+  pdfOptions: PdfMergeOptions,
+  onProgress: (p: number) => void
+): Promise<Blob> {
+  const { jsPDF } = await import('jspdf');
+  const quality = options?.quality ?? 0.92;
+  const margin = Math.max(0, pdfOptions.margin ?? 0);
+  const orientation = pdfOptions.orientation ?? 'auto';
+  const total = files.length;
+
+  const canvases: HTMLCanvasElement[] = [];
+  for (let i = 0; i < total; i++) {
+    canvases.push(await renderImageToCanvas(files[i], options));
+    onProgress(Math.round(((i + 1) / total) * 80));
+  }
+
+  let pdf: InstanceType<typeof jsPDF> | null = null;
+
+  canvases.forEach((canvas, idx) => {
+    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+    const layout = computePdfPage(canvas.width, canvas.height, margin, orientation);
+
+    if (idx === 0) {
+      pdf = new jsPDF({ orientation: layout.pageOrientation, unit: 'px', format: layout.page });
+    } else {
+      pdf!.addPage(layout.page, layout.pageOrientation);
+    }
+    pdf!.addImage(dataUrl, 'JPEG', layout.draw.x, layout.draw.y, layout.draw.w, layout.draw.h);
+  });
+
+  onProgress(100);
+  return pdf!.output('blob');
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {
