@@ -2,10 +2,14 @@ import { useRef, useState, useEffect } from 'react';
 import { X, Download, Play, Pause } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
 export default function PreviewPanel() {
   const { tasks, previewTaskId, previewItemId, setPreviewTask, toggleSidebar, sidebarOpen, downloadItem } = useConvertStore();
   const [content, setContent] = useState('');
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -25,7 +29,7 @@ export default function PreviewPanel() {
   }, [tasks, previewTaskId, previewItemId, sidebarOpen, setPreviewTask]);
 
   useEffect(() => {
-    if (!sidebarOpen || !item?.resultBlob) { setContent(''); return; }
+    if (!sidebarOpen || !item?.resultBlob) { setContent(''); setPdfPages([]); return; }
     loadContent();
   }, [item?.id, sidebarOpen]);
 
@@ -35,7 +39,28 @@ export default function PreviewPanel() {
     if (!item) return;
     const ext = item?.targetFormat.toLowerCase() || '';
 
-    if (['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'].includes(ext)) {
+    if (ext === 'pdf') {
+      setLoading(true);
+      setPdfPages([]);
+      try {
+        const data = new Uint8Array(await item.resultBlob!.arrayBuffer());
+        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        const urls: string[] = [];
+        const scale = 1.5;
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          const canvasContext = canvas.getContext('2d')!;
+          await page.render({ canvas, canvasContext, viewport }).promise;
+          urls.push(canvas.toDataURL('image/png'));
+        }
+        setPdfPages(urls);
+      } catch { setPdfPages([]); }
+      setLoading(false);
+    } else if (['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'].includes(ext)) {
       setLoading(true);
       try {
         const buffer = await item.resultBlob!.arrayBuffer();
@@ -65,6 +90,7 @@ export default function PreviewPanel() {
   const isVideo = !!item && (task.convertType === 'video' || (item.targetFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(item.targetFormat) && !audioFormats.includes(item.targetFormat)));
   const isAudio = !!item && !isVideo && (task.convertType === 'audio' || audioFormats.includes(item.targetFormat));
   const isImage = item && ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico'].includes(item.targetFormat);
+  const isPdf = !!item && item.targetFormat.toLowerCase() === 'pdf';
 
   const panelContent = (
     <>
@@ -113,6 +139,23 @@ export default function PreviewPanel() {
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
             <img src={item.resultUrl || ''} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
+          </div>
+        ) : isPdf ? (
+          <div className="space-y-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />
+              </div>
+            ) : pdfPages.length > 0 ? (
+              pdfPages.map((url, idx) => (
+                <figure key={idx} className="rounded-lg overflow-hidden border border-[var(--border)] bg-white shadow-sm">
+                  <img src={url} alt={`第 ${idx + 1} 页`} className="w-full h-auto block" />
+                  <figcaption className="text-center text-[10px] text-[var(--text-muted)] py-1 bg-[var(--surface)]">{idx + 1} / {pdfPages.length}</figcaption>
+                </figure>
+              ))
+            ) : (
+              <div className="flex items-center justify-center py-12 text-[var(--text-faint)] text-xs">无法预览此 PDF</div>
+            )}
           </div>
         ) : loading ? (
           <div className="flex items-center justify-center h-full"><div className="w-6 h-6 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" /></div>
