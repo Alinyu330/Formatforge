@@ -41,6 +41,7 @@ interface ConvertState {
   addFiles: (files: File[], type: ConvertType, formats?: string[]) => void;
   removeTask: (id: string) => void;
   moveTask: (fromId: string, toId: string) => void;
+  moveTaskToPosition: (id: string, position: number) => void;
   pinTask: (id: string) => void;
   rotateTask: (id: string, direction: 'cw' | 'ccw') => void;
   clearTasks: () => void;
@@ -276,6 +277,24 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       const tasks = [...s.tasks];
       const [moved] = tasks.splice(fromIndex, 1);
       tasks.splice(toIndex, 0, moved);
+      return { tasks };
+    });
+  },
+
+  moveTaskToPosition: (id, position) => {
+    set((s) => {
+      const idx = s.tasks.findIndex((t) => t.id === id);
+      if (idx < 0) return {};
+      const task = s.tasks[idx];
+      const pinnedCount = s.tasks.filter((t) => t.pinned).length;
+      // 置顶文件只能在置顶区内移动，非置顶文件只能在非置顶区内移动
+      const min = task.pinned ? 0 : pinnedCount;
+      const max = task.pinned ? Math.max(0, pinnedCount - 1) : s.tasks.length - 1;
+      const target = Math.max(min, Math.min(max, position));
+      if (target === idx) return {};
+      const tasks = [...s.tasks];
+      const [moved] = tasks.splice(idx, 1);
+      tasks.splice(target, 0, moved);
       return { tasks };
     });
   },

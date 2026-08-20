@@ -4,11 +4,41 @@ import { useConvertStore } from '@/store/convertStore';
 import { formatFileSize, getAvailableTargetFormats, stripExtension } from '@/utils/format';
 import FormatMultiSelector from '@/components/FormatMultiSelector';
 
+function OrderInput({ index, total, onCommit }: { index: number; total: number; onCommit: (position: number) => void }) {
+  const [draft, setDraft] = useState<string>(String(index + 1));
+
+  useEffect(() => { setDraft(String(index + 1)); }, [index]);
+
+  const commit = () => {
+    const n = parseInt(draft, 10);
+    if (Number.isNaN(n)) {
+      setDraft(String(index + 1));
+      return;
+    }
+    onCommit(Math.max(1, Math.min(total, n)) - 1);
+  };
+
+  return (
+    <input
+      type="number"
+      min={1}
+      max={total}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      className="w-9 sm:w-10 text-center rounded-md bg-[var(--surface)] border border-[var(--border)] text-[11px] sm:text-xs text-[var(--text-strong)] outline-none focus:border-[#00d4ff] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none shrink-0"
+      title="输入序号调整排序"
+    />
+  );
+}
+
 export default function ConvertQueue() {
   const {
     tasks,
     removeTask,
     moveTask,
+    moveTaskToPosition,
     pinTask,
     rotateTask,
     downloadItem,
@@ -79,7 +109,7 @@ export default function ConvertQueue() {
         </div>
       )}
 
-      {tasks.map((task) => {
+      {tasks.map((task, index) => {
         const taskDone = task.items.some((i) => i.status === 'done');
         const taskError = task.items.some((i) => i.status === 'error');
         const taskConverting = task.items.some((i) => i.status === 'converting');
@@ -106,6 +136,7 @@ export default function ConvertQueue() {
               >
                 <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
+              <OrderInput index={index} total={tasks.length} onCommit={(position) => moveTaskToPosition(task.id, position)} />
               <input
                 type="checkbox"
                 checked={task.selected}
