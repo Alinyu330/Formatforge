@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ConvertTask, ConvertType, ConvertItem, TaskStatus, AudioOptions, ImageOptions, VideoOptions, PdfMergeOptions } from '@/types';
 import { MAX_CONCURRENT } from '@/types';
-import { getFileExtension, resolveAudioExtension, generateId } from '@/utils/format';
+import { getFileExtension, resolveAudioExtension, generateId, stripExtension } from '@/utils/format';
 import { convertAudio } from '@/utils/audio';
 import { convertVideo } from '@/utils/video';
 import { convertSheet } from '@/utils/sheet';
@@ -36,6 +36,10 @@ interface ConvertState {
   removeTask: (id: string) => void;
   clearTasks: () => void;
   updateTaskFormats: (id: string, formats: string[]) => void;
+  renameTask: (id: string, name: string) => void;
+  setTaskSelected: (id: string, selected: boolean) => void;
+  setAllTasksSelected: (selected: boolean) => void;
+  setFormatsForSelected: (formats: string[]) => void;
   setAudioOptions: (opts: Partial<AudioOptions>) => void;
   setImageOptions: (opts: Partial<ImageOptions>) => void;
   setPdfMergeOptions: (opts: Partial<PdfMergeOptions>) => void;
@@ -141,6 +145,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
         progress: 0,
       })),
       sourceFile: file,
+      selected: true,
     }));
     set((s) => ({ tasks: [...s.tasks, ...tasks] }));
   },
@@ -186,6 +191,42 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
         }));
         return { ...t, items: [...items, ...newItems] };
       }),
+    }));
+  },
+
+  renameTask: (id, name) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, customName: name } : t)),
+    }));
+  },
+
+  setTaskSelected: (id, selected) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, selected } : t)),
+    }));
+  },
+
+  setAllTasksSelected: (selected) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) => ({ ...t, selected })),
+    }));
+  },
+
+  setFormatsForSelected: (formats) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) =>
+        t.selected
+          ? {
+              ...t,
+              items: formats.map((f) => ({
+                id: generateId(),
+                targetFormat: f,
+                status: 'pending' as TaskStatus,
+                progress: 0,
+              })),
+            }
+          : t
+      ),
     }));
   },
 
@@ -322,7 +363,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     const item = task?.items.find((i) => i.id === itemId);
     if (!item || !item.resultBlob) return;
 
-    const baseName = task!.fileName.replace(/\.[^/.]+$/, '');
+    const baseName = (task!.customName && task!.customName.trim()) || stripExtension(task!.fileName);
     const newName = `${baseName}.${item.targetFormat}`;
 
     const url = URL.createObjectURL(item.resultBlob);
@@ -343,11 +384,11 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
 
   downloadAllAsZip: async () => {
     const state = get();
-    const doneItems: { taskName: string; item: ConvertItem }[] = [];
+    const doneItems: { task: ConvertTask; item: ConvertItem }[] = [];
     for (const task of state.tasks) {
       for (const item of task.items) {
         if (item.status === 'done' && item.resultBlob) {
-          doneItems.push({ taskName: task.fileName, item });
+          doneItems.push({ task, item });
         }
       }
     }
@@ -356,8 +397,8 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
 
-    for (const { taskName, item } of doneItems) {
-      const baseName = taskName.replace(/\.[^/.]+$/, '');
+    for (const { task, item } of doneItems) {
+      const baseName = (task.customName && task.customName.trim()) || stripExtension(task.fileName);
       zip.file(`${baseName}.${item.targetFormat}`, item.resultBlob!);
     }
 
@@ -395,6 +436,7 @@ export const useConvertStore = create<ConvertState>((set, get) => ({
           sourceFormat: 'image',
           targetFormat: 'pdf',
           sourceFile: files[0],
+          selected: true,
           items: [{ id: itemId, targetFormat: 'pdf', status: 'converting' as TaskStatus, progress: 0 }],
         },
       ],

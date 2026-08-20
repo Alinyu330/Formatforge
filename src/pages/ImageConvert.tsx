@@ -1,36 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Play, Archive, Layers } from 'lucide-react';
 import ConvertLayout from '@/components/ConvertLayout';
 import FileUpload from '@/components/FileUpload';
-import FormatMultiSelector from '@/components/FormatMultiSelector';
 import ImageOptions from '@/components/ImageOptions';
 import PdfMergeOptions from '@/components/PdfMergeOptions';
 import ConvertQueue from '@/components/ConvertQueue';
 import { useConvertStore } from '@/store/convertStore';
 
-const IMAGE_FORMATS = [
-  { value: 'png', label: 'PNG' },
-  { value: 'jpeg', label: 'JPEG' },
-  { value: 'webp', label: 'WebP' },
-  { value: 'bmp', label: 'BMP' },
-  { value: 'ico', label: 'ICO' },
-  { value: 'tiff', label: 'TIFF' },
-  { value: 'pdf', label: 'PDF' },
-];
-
 export default function ImageConvert() {
-  const { tasks, isProcessing, addFiles, clearTasks, updateTaskFormats, startConversion, downloadAllAsZip, mergeImagesToPdf, setCurrentType } = useConvertStore();
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const { tasks, isProcessing, addFiles, clearTasks, startConversion, downloadAllAsZip, mergeImagesToPdf, setCurrentType } = useConvertStore();
 
   useEffect(() => { setCurrentType('image'); }, [setCurrentType]);
 
   const pendingCount = tasks.reduce((sum, t) => sum + t.items.filter((i) => i.status === 'pending').length, 0);
   const doneCount = tasks.reduce((sum, t) => sum + t.items.filter((i) => i.status === 'done').length, 0);
-
-  const applyFormats = (fmts: string[]) => {
-    setSelectedFormats(fmts);
-    tasks.forEach((t) => updateTaskFormats(t.id, fmts));
-  };
 
   return (
     <ConvertLayout>
@@ -46,10 +29,6 @@ export default function ImageConvert() {
 
         {tasks.length > 0 && (
           <>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">目标格式（可多选）</p>
-              <FormatMultiSelector formats={IMAGE_FORMATS} selected={selectedFormats} onChange={applyFormats} />
-            </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">转换参数</p>
               <ImageOptions />

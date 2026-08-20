@@ -1,31 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Play, Archive } from 'lucide-react';
 import ConvertLayout from '@/components/ConvertLayout';
 import FileUpload from '@/components/FileUpload';
-import FormatMultiSelector from '@/components/FormatMultiSelector';
 import ConvertQueue from '@/components/ConvertQueue';
 import { useConvertStore } from '@/store/convertStore';
 
-const SHEET_FORMATS = [
-  { value: 'xlsx', label: 'XLSX' },
-  { value: 'csv', label: 'CSV' },
-  { value: 'ods', label: 'ODS' },
-  { value: 'html', label: 'HTML' },
-];
-
 export default function SheetConvert() {
-  const { tasks, isProcessing, addFiles, clearTasks, updateTaskFormats, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const { tasks, isProcessing, addFiles, clearTasks, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
 
   useEffect(() => { setCurrentType('sheet'); }, [setCurrentType]);
 
   const pendingCount = tasks.reduce((sum, t) => sum + t.items.filter((i) => i.status === 'pending').length, 0);
   const doneCount = tasks.reduce((sum, t) => sum + t.items.filter((i) => i.status === 'done').length, 0);
-
-  const applyFormats = (fmts: string[]) => {
-    setSelectedFormats(fmts);
-    tasks.forEach((t) => updateTaskFormats(t.id, fmts));
-  };
 
   return (
     <ConvertLayout>
@@ -38,13 +24,6 @@ export default function SheetConvert() {
         <FileUpload type="sheet" onFilesAdd={(f) => addFiles(f, 'sheet')}
           accept=".xlsx,.xls,.csv,.ods,.html,.htm"
           disabled={isProcessing} />
-
-        {tasks.length > 0 && (
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">目标格式（可多选）</p>
-            <FormatMultiSelector formats={SHEET_FORMATS} selected={selectedFormats} onChange={applyFormats} />
-          </div>
-        )}
 
         <ConvertQueue />
 

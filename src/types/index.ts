@@ -54,6 +54,8 @@ export interface ConvertTask {
   sourceFile: File;
   resultBlob?: Blob;
   resultUrl?: string;
+  customName?: string;
+  selected: boolean;
   audioOptions?: AudioOptions;
   imageOptions?: ImageOptions;
   videoOptions?: VideoOptions;

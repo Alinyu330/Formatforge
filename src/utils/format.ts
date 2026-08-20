@@ -1,4 +1,4 @@
-import type { ConvertType } from '@/types';
+import type { ConvertType, ConvertTask } from '@/types';
 
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -57,6 +57,45 @@ export const SHEET_MIME_MAP: Record<string, string[]> = {
 export const IMAGE_MIME_MAP: Record<string, string[]> = {
   png: ['image/png'], jpg: ['image/jpeg'], jpeg: ['image/jpeg'], webp: ['image/webp'], bmp: ['image/bmp'], ico: ['image/x-icon', 'image/vnd.microsoft.icon'], tiff: ['image/tiff'], tif: ['image/tiff'], gif: ['image/gif'], svg: ['image/svg+xml'],
 };
+
+export const AUDIO_TARGET_FORMATS = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'webm'];
+export const VIDEO_TARGET_FORMATS = ['mp4', 'mkv', 'webm', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'gif'];
+export const IMAGE_TARGET_FORMATS = ['png', 'jpeg', 'webp', 'bmp', 'ico', 'tiff', 'pdf'];
+export const SHEET_TARGET_FORMATS = ['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv', 'txt', 'html'];
+export const PDF_TARGET_FORMATS = ['pptx', 'docx', 'xlsx', 'png', 'jpeg', 'txt'];
+export const WORD_TARGET_FORMATS = ['docx', 'txt', 'html', 'pdf'];
+export const PPT_TARGET_FORMATS = ['pptx', 'txt', 'html'];
+
+export interface FormatOption {
+  value: string;
+  label: string;
+}
+
+function toOptions(formats: string[]): FormatOption[] {
+  return formats.map((value) => ({ value, label: value.toUpperCase() }));
+}
+
+/** 返回某个任务可用的目标格式（办公文档类根据源扩展名区分）。 */
+export function getAvailableTargetFormats(task: ConvertTask): FormatOption[] {
+  const ext = task.sourceFormat.toLowerCase();
+  switch (task.convertType) {
+    case 'audio': return toOptions(AUDIO_TARGET_FORMATS);
+    case 'video': return toOptions(VIDEO_TARGET_FORMATS);
+    case 'image': return toOptions(IMAGE_TARGET_FORMATS);
+    case 'sheet': return toOptions(SHEET_TARGET_FORMATS);
+    case 'document':
+      if (ext === 'pdf') return toOptions(PDF_TARGET_FORMATS);
+      if (ext === 'docx') return toOptions(WORD_TARGET_FORMATS);
+      if (ext === 'pptx') return toOptions(PPT_TARGET_FORMATS);
+      if (SHEET_EXTENSIONS.includes(ext)) return toOptions(SHEET_TARGET_FORMATS);
+      return [];
+  }
+}
+
+/** 去掉文件名扩展名，返回基础名（用于重命名与下载命名）。 */
+export function stripExtension(filename: string): string {
+  return filename.replace(/\.[^/.]+$/, '');
+}
 
 export function detectConvertType(file: File): ConvertType | null {
   const parts = file.name.toLowerCase().split('.');

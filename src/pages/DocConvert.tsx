@@ -1,61 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Play, Archive } from 'lucide-react';
 import ConvertLayout from '@/components/ConvertLayout';
 import FileUpload from '@/components/FileUpload';
-import FormatMultiSelector from '@/components/FormatMultiSelector';
 import ConvertQueue from '@/components/ConvertQueue';
 import { useConvertStore } from '@/store/convertStore';
 import { getFileExtension, SHEET_EXTENSIONS, WORD_EXTENSIONS, POWERPOINT_EXTENSIONS } from '@/utils/format';
 
-const SHEET_FORMATS = ['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv', 'txt', 'html'].map((value) => ({ value, label: value.toUpperCase() }));
-const WORD_FORMATS = ['docx', 'txt', 'html', 'pdf'].map((value) => ({ value, label: value.toUpperCase() }));
-const PPT_FORMATS = ['pptx', 'txt', 'html'].map((value) => ({ value, label: value.toUpperCase() }));
-const PDF_FORMATS = [
-  { value: 'pptx', label: 'PPT' },
-  { value: 'docx', label: 'Word' },
-  { value: 'xlsx', label: 'Excel' },
-  { value: 'png', label: '图片 PNG' },
-  { value: 'jpeg', label: '图片 JPG' },
-  { value: 'txt', label: 'TXT' },
-];
-
 export default function DocConvert() {
-  const { tasks, isProcessing, addFiles, clearTasks, updateTaskFormats, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
-  const [sheetFormats, setSheetFormats] = useState<string[]>([]);
-  const [wordFormats, setWordFormats] = useState<string[]>([]);
-  const [pptFormats, setPptFormats] = useState<string[]>([]);
-  const [pdfFormats, setPdfFormats] = useState<string[]>([]);
+  const { tasks, isProcessing, addFiles, clearTasks, startConversion, downloadAllAsZip, setCurrentType } = useConvertStore();
 
   useEffect(() => { setCurrentType('document'); }, [setCurrentType]);
 
   const pendingCount = tasks.reduce((sum, task) => sum + task.items.filter((item) => item.status === 'pending').length, 0);
   const doneCount = tasks.reduce((sum, task) => sum + task.items.filter((item) => item.status === 'done').length, 0);
 
-  const hasSheets = tasks.some((task) => task.convertType === 'sheet');
-  const hasWords = tasks.some((task) => task.convertType === 'document' && getFileExtension(task.fileName) === 'docx');
-  const hasPpts = tasks.some((task) => task.convertType === 'document' && getFileExtension(task.fileName) === 'pptx');
-  const hasPdfs = tasks.some((task) => task.convertType === 'document' && getFileExtension(task.fileName) === 'pdf');
-
   const handleFiles = (files: File[]) => {
     const sheets = files.filter((file) => SHEET_EXTENSIONS.includes(getFileExtension(file.name)));
     const words = files.filter((file) => WORD_EXTENSIONS.includes(getFileExtension(file.name)));
     const presentations = files.filter((file) => POWERPOINT_EXTENSIONS.includes(getFileExtension(file.name)));
     const pdfs = files.filter((file) => getFileExtension(file.name) === 'pdf');
-    if (sheets.length) addFiles(sheets, 'sheet', sheetFormats);
-    if (words.length) addFiles(words, 'document', wordFormats);
-    if (presentations.length) addFiles(presentations, 'document', pptFormats);
-    if (pdfs.length) addFiles(pdfs, 'document', pdfFormats);
-  };
-
-  const applyFormats = (category: 'sheet' | 'word' | 'ppt' | 'pdf', formats: string[]) => {
-    if (category === 'sheet') setSheetFormats(formats);
-    if (category === 'word') setWordFormats(formats);
-    if (category === 'ppt') setPptFormats(formats);
-    if (category === 'pdf') setPdfFormats(formats);
-    tasks.filter((task) => category === 'sheet'
-      ? task.convertType === 'sheet'
-      : getFileExtension(task.fileName) === (category === 'word' ? 'docx' : category === 'ppt' ? 'pptx' : 'pdf'))
-      .forEach((task) => updateTaskFormats(task.id, formats));
+    if (sheets.length) addFiles(sheets, 'sheet');
+    if (words.length) addFiles(words, 'document');
+    if (presentations.length) addFiles(presentations, 'document');
+    if (pdfs.length) addFiles(pdfs, 'document');
   };
 
   return (
@@ -69,15 +36,6 @@ export default function DocConvert() {
         <FileUpload type="document" onFilesAdd={handleFiles}
           accept=".pdf,.xlsx,.xls,.csv,.ods,.html,.htm,.docx,.pptx"
           disabled={isProcessing} />
-
-        {tasks.length > 0 && (
-          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
-            {hasPdfs && <div><p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">PDF 目标格式</p><FormatMultiSelector formats={PDF_FORMATS} selected={pdfFormats} onChange={(formats) => applyFormats('pdf', formats)} /></div>}
-            {hasSheets && <div><p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">表格目标格式</p><FormatMultiSelector formats={SHEET_FORMATS} selected={sheetFormats} onChange={(formats) => applyFormats('sheet', formats)} /></div>}
-            {hasWords && <div><p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">Word DOCX 目标格式</p><FormatMultiSelector formats={WORD_FORMATS} selected={wordFormats} onChange={(formats) => applyFormats('word', formats)} /></div>}
-            {hasPpts && <div><p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-2">PowerPoint PPTX 目标格式</p><FormatMultiSelector formats={PPT_FORMATS} selected={pptFormats} onChange={(formats) => applyFormats('ppt', formats)} /></div>}
-          </div>
-        )}
 
         <ConvertQueue />
 
