@@ -35,6 +35,7 @@ interface ConvertState {
   currentType: ConvertType;
   previewTaskId: string | null;
   previewItemId: string | null;
+  previewSource: boolean;
   sidebarOpen: boolean;
 
   addFiles: (files: File[], type: ConvertType, formats?: string[]) => void;
@@ -57,6 +58,7 @@ interface ConvertState {
   mergeImagesToPdf: () => Promise<void>;
 
   setPreviewTask: (taskId: string | null, itemId?: string | null) => void;
+  previewSourceFile: (taskId: string) => void;
   toggleSidebar: () => void;
   getTaskCounts: () => { pending: number; converting: number; done: number; error: number };
 }
@@ -221,6 +223,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
   pdfMergeOptions: { orientation: 'auto', margin: 0 },
   previewTaskId: null,
   previewItemId: null,
+  previewSource: false,
   sidebarOpen: false,
 
   addFiles: (files: File[], type: ConvertType, formats: string[] = []) => {
@@ -254,6 +257,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       return {
         tasks: s.tasks.filter((t) => t.id !== id),
         previewTaskId: s.previewTaskId === id ? null : s.previewTaskId,
+        previewSource: s.previewTaskId === id ? false : s.previewSource,
       };
     });
   },
@@ -265,7 +269,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
         if (item.resultUrl) URL.revokeObjectURL(item.resultUrl);
       });
     });
-    set({ tasks: [], previewTaskId: null, previewItemId: null });
+    set({ tasks: [], previewTaskId: null, previewItemId: null, previewSource: false });
   },
 
   updateTaskFormats: (id: string, formats: string[]) => {
@@ -342,7 +346,11 @@ export const useConvertStore = create<ConvertState>((set, get) => {
   setCurrentType: (type) => set({ currentType: type }),
 
   setPreviewTask: (taskId, itemId = null) => {
-    set({ previewTaskId: taskId, previewItemId: itemId, sidebarOpen: !!taskId });
+    set({ previewTaskId: taskId, previewItemId: itemId, previewSource: false, sidebarOpen: !!taskId });
+  },
+
+  previewSourceFile: (taskId) => {
+    set({ previewTaskId: taskId, previewItemId: null, previewSource: true, sidebarOpen: true });
   },
 
   toggleSidebar: () => {

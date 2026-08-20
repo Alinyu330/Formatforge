@@ -6,44 +6,66 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
+const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'alac', 'ape', 'ac3', 'eac3', 'amr', 'aiff', 'au', 'caf', 'webm'];
+const videoFormats = ['mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'webm'];
+const imageFormats = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico'];
+const sheetFormats = ['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'];
+
 export default function PreviewPanel() {
-  const { tasks, previewTaskId, previewItemId, setPreviewTask, toggleSidebar, sidebarOpen, downloadItem } = useConvertStore();
+  const { tasks, previewTaskId, previewItemId, previewSource, setPreviewTask, toggleSidebar, sidebarOpen, downloadItem } = useConvertStore();
   const [content, setContent] = useState('');
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
 
   const task = tasks.find((t) => t.id === previewTaskId);
   const item = task?.items.find((i) => i.id === previewItemId);
+  // 源文件预览：由「预览源文件」入口触发，此时没有转换项
+  const isSource = previewSource && !!task;
+
+  // 维护源文件的 object URL
+  useEffect(() => {
+    if (isSource && task?.sourceFile) {
+      const url = URL.createObjectURL(task.sourceFile);
+      setSourceUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setSourceUrl('');
+  }, [isSource, previewTaskId]);
+
+  // 当前预览的目标：结果或源文件
+  const previewFormat = (isSource ? task.sourceFormat : item?.targetFormat || '').toLowerCase();
+  const previewBlob: Blob | undefined = isSource ? task.sourceFile : item?.resultBlob;
+  const previewUrl = isSource ? sourceUrl : item?.resultUrl || '';
 
   // Auto-select first completed item if none selected
   useEffect(() => {
-    if (sidebarOpen && previewTaskId && !previewItemId) {
+    if (sidebarOpen && previewTaskId && !previewItemId && !previewSource) {
       const t = tasks.find((t) => t.id === previewTaskId);
       const firstDone = t?.items.find((i) => i.status === 'done');
       if (firstDone) {
         setPreviewTask(previewTaskId, firstDone.id);
       }
     }
-  }, [tasks, previewTaskId, previewItemId, sidebarOpen, setPreviewTask]);
+  }, [tasks, previewTaskId, previewItemId, previewSource, sidebarOpen, setPreviewTask]);
 
+  // 加载文本/表格/PDF 类内容
   useEffect(() => {
-    if (!sidebarOpen || !item?.resultBlob) { setContent(''); setPdfPages([]); return; }
-    loadContent();
-  }, [item?.id, sidebarOpen]);
+    if (!sidebarOpen || !previewBlob || !task) { setContent(''); setPdfPages([]); return; }
+    loadContent(previewBlob, previewFormat);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewTaskId, previewItemId, previewSource, sidebarOpen]);
 
   if (!sidebarOpen || !task) return null;
 
-  async function loadContent() {
-    if (!item) return;
-    const ext = item?.targetFormat.toLowerCase() || '';
-
+  async function loadContent(blob: Blob, ext: string) {
     if (ext === 'pdf') {
       setLoading(true);
       setPdfPages([]);
       try {
-        const data = new Uint8Array(await item.resultBlob!.arrayBuffer());
+        const data = new Uint8Array(await blob.arrayBuffer());
         const pdf = await pdfjsLib.getDocument({ data }).promise;
         const urls: string[] = [];
         const scale = 1.5;
@@ -60,10 +82,10 @@ export default function PreviewPanel() {
         setPdfPages(urls);
       } catch { setPdfPages([]); }
       setLoading(false);
-    } else if (['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'].includes(ext)) {
+    } else if (sheetFormats.includes(ext)) {
       setLoading(true);
       try {
-        const buffer = await item.resultBlob!.arrayBuffer();
+        const buffer = await blob.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const html = XLSX.utils.sheet_to_html(sheet, { editable: false });
@@ -72,31 +94,29 @@ export default function PreviewPanel() {
       setLoading(false);
     } else if (['html', 'htm'].includes(ext)) {
       setLoading(true);
-      try { setContent(await item.resultBlob!.text()); } catch { setContent(''); }
+      try { setContent(await blob.text()); } catch { setContent(''); }
       setLoading(false);
     } else if (ext === 'txt') {
       setLoading(true);
       try {
-        const text = await item.resultBlob!.text();
-        setContent(`<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.6;color:var(--text);">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`);
+        const text = await blob.text();
+        setContent(`<pre style="white-space:pre-wrap;font-family:monospace;font-size:12px;line-height:1.6;color:var(--text);">${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>`);
       } catch { setContent(''); }
       setLoading(false);
     }
   }
 
-  const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'alac', 'ape', 'ac3', 'eac3', 'amr', 'aiff', 'au', 'caf', 'webm'];
-  const videoFormats = ['mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'webm'];
-  const mime = item?.resultBlob?.type || '';
-  const isVideo = !!item && (task.convertType === 'video' || (item.targetFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(item.targetFormat) && !audioFormats.includes(item.targetFormat)));
-  const isAudio = !!item && !isVideo && (task.convertType === 'audio' || audioFormats.includes(item.targetFormat));
-  const isImage = item && ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico'].includes(item.targetFormat);
-  const isPdf = !!item && item.targetFormat.toLowerCase() === 'pdf';
+  const mime = previewBlob?.type || '';
+  const isVideo = !!previewBlob && (task.convertType === 'video' || (previewFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(previewFormat) && !audioFormats.includes(previewFormat)));
+  const isAudio = !!previewBlob && !isVideo && (task.convertType === 'audio' || audioFormats.includes(previewFormat));
+  const isImage = !!previewBlob && imageFormats.includes(previewFormat);
+  const isPdf = !!previewBlob && previewFormat === 'pdf';
 
   const panelContent = (
     <>
       {/* Header */}
       <div className="flex items-center gap-2 px-4 h-12 border-b border-[var(--border)] shrink-0">
-        <span className="text-xs font-medium text-[var(--text)] truncate flex-1">预览</span>
+        <span className="text-xs font-medium text-[var(--text)] truncate flex-1">{isSource ? '预览源文件' : '预览'}</span>
         <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
           <X className="w-4 h-4" />
         </button>
@@ -104,14 +124,14 @@ export default function PreviewPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
-        {!item ? (
+        {!isSource && !item ? (
           <div className="flex items-center justify-center h-full text-[var(--text-faint)] text-xs">选择转换项以预览</div>
-        ) : item.status === 'converting' ? (
+        ) : !isSource && item.status === 'converting' ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div className="w-8 h-8 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />
             <p className="text-xs text-[var(--text-muted)]">转换中 {item.progress}%</p>
           </div>
-        ) : item.status === 'error' ? (
+        ) : !isSource && item.status === 'error' ? (
           <div className="flex flex-col items-center justify-center h-full text-red-400/60 text-xs gap-1">
             <p>转换失败</p>
             <p>{item.error}</p>
@@ -130,15 +150,15 @@ export default function PreviewPanel() {
               </button>
             </div>
             <p className="text-[11px] text-[var(--text)] text-center truncate max-w-full">{task.fileName}</p>
-            <span className="text-[10px] uppercase text-[#00d4ff]">{item.targetFormat}</span>
-            <audio ref={audioRef} src={item.resultUrl || ''} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} className="hidden" />
-            <audio src={item.resultUrl || ''} controls className="w-full mt-2" style={{ height: 32 }} />
+            <span className="text-[10px] uppercase text-[#00d4ff]">{previewFormat}</span>
+            <audio ref={audioRef} src={previewUrl} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} className="hidden" />
+            <audio src={previewUrl} controls className="w-full mt-2" style={{ height: 32 }} />
           </div>
         ) : isVideo ? (
-          <video src={item.resultUrl || ''} controls className="w-full max-h-full rounded-lg" />
+          <video src={previewUrl} controls className="w-full max-h-full rounded-lg" />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
-            <img src={item.resultUrl || ''} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
+            <img src={previewUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
           </div>
         ) : isPdf ? (
           <div className="space-y-4">
@@ -167,7 +187,7 @@ export default function PreviewPanel() {
       </div>
 
       {/* Footer */}
-      {item?.status === 'done' && (
+      {!isSource && item?.status === 'done' && (
         <div className="p-2 border-t border-[var(--border)] shrink-0">
           <button
             onClick={() => downloadItem(task.id, item.id)}

@@ -10,6 +10,7 @@ export default function ConvertQueue() {
     removeTask,
     downloadItem,
     setPreviewTask,
+    previewSourceFile,
     renameTask,
     setTaskSelected,
     setAllTasksSelected,
@@ -112,6 +113,9 @@ export default function ConvertQueue() {
                   {formatFileSize(task.fileSize)} · {task.sourceFormat}
                 </span>
               </div>
+              <button onClick={() => previewSourceFile(task.id)} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="预览源文件">
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
               <button onClick={() => removeTask(task.id)} className="p-1 sm:p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--text-faint)] hover:text-red-400 transition-colors shrink-0">
                 <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
