@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trash2, Download, CheckCircle2, AlertCircle, Loader2, Eye } from 'lucide-react';
+import { Trash2, Download, CheckCircle2, AlertCircle, Loader2, Eye, GripVertical } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import { formatFileSize, getAvailableTargetFormats, stripExtension } from '@/utils/format';
 import FormatMultiSelector from '@/components/FormatMultiSelector';
@@ -8,6 +8,7 @@ export default function ConvertQueue() {
   const {
     tasks,
     removeTask,
+    moveTask,
     downloadItem,
     setPreviewTask,
     previewSourceFile,
@@ -19,6 +20,8 @@ export default function ConvertQueue() {
   } = useConvertStore();
 
   const [batchFormat, setBatchFormat] = useState<string>('');
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const selectedCount = tasks.filter((t) => t.selected).length;
   const allSelected = selectedCount === tasks.length;
@@ -83,9 +86,24 @@ export default function ConvertQueue() {
         const availableFormats = getAvailableTargetFormats(task);
 
         return (
-          <div key={task.id} className="rounded-xl bg-[var(--surface)] border border-[var(--border)] overflow-hidden">
+          <div
+            key={task.id}
+            onDragOver={(e) => { if (dragId && dragId !== task.id) { e.preventDefault(); setDragOverId(task.id); } }}
+            onDragLeave={() => setDragOverId((cur) => (cur === task.id ? null : cur))}
+            onDrop={(e) => { e.preventDefault(); if (dragId && dragId !== task.id) moveTask(dragId, task.id); setDragId(null); setDragOverId(null); }}
+            className={`rounded-xl bg-[var(--surface)] border overflow-hidden transition-colors ${dragOverId === task.id ? 'border-[#00d4ff]' : 'border-[var(--border)]'} ${dragId === task.id ? 'opacity-40' : ''}`}
+          >
             {/* Task header */}
             <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
+              <button
+                draggable
+                onDragStart={(e) => { setDragId(task.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', task.id); }}
+                onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                className="p-1 rounded cursor-grab active:cursor-grabbing text-[var(--text-faint)] hover:text-[var(--text)] shrink-0"
+                title="拖动调整顺序"
+              >
+                <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </button>
               <input
                 type="checkbox"
                 checked={task.selected}

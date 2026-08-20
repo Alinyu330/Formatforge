@@ -40,6 +40,7 @@ interface ConvertState {
 
   addFiles: (files: File[], type: ConvertType, formats?: string[]) => void;
   removeTask: (id: string) => void;
+  moveTask: (fromId: string, toId: string) => void;
   clearTasks: () => void;
   updateTaskFormats: (id: string, formats: string[]) => void;
   renameTask: (id: string, name: string) => void;
@@ -259,6 +260,19 @@ export const useConvertStore = create<ConvertState>((set, get) => {
         previewTaskId: s.previewTaskId === id ? null : s.previewTaskId,
         previewSource: s.previewTaskId === id ? false : s.previewSource,
       };
+    });
+  },
+
+  moveTask: (fromId, toId) => {
+    set((s) => {
+      if (fromId === toId) return {};
+      const fromIndex = s.tasks.findIndex((t) => t.id === fromId);
+      const toIndex = s.tasks.findIndex((t) => t.id === toId);
+      if (fromIndex < 0 || toIndex < 0) return {};
+      const tasks = [...s.tasks];
+      const [moved] = tasks.splice(fromIndex, 1);
+      tasks.splice(toIndex, 0, moved);
+      return { tasks };
     });
   },
 
