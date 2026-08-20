@@ -41,6 +41,8 @@ interface ConvertState {
   addFiles: (files: File[], type: ConvertType, formats?: string[]) => void;
   removeTask: (id: string) => void;
   moveTask: (fromId: string, toId: string) => void;
+  pinTask: (id: string) => void;
+  rotateTask: (id: string, direction: 'cw' | 'ccw') => void;
   clearTasks: () => void;
   updateTaskFormats: (id: string, formats: string[]) => void;
   renameTask: (id: string, name: string) => void;
@@ -243,6 +245,8 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       })),
       sourceFile: file,
       selected: true,
+      pinned: false,
+      rotation: 0,
     }));
     set((s) => ({ tasks: [...s.tasks, ...tasks] }));
   },
@@ -274,6 +278,35 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       tasks.splice(toIndex, 0, moved);
       return { tasks };
     });
+  },
+
+  pinTask: (id) => {
+    set((s) => {
+      const idx = s.tasks.findIndex((t) => t.id === id);
+      if (idx < 0) return {};
+      const task = s.tasks[idx];
+      const rest = [...s.tasks];
+      rest.splice(idx, 1);
+      if (task.pinned) {
+        // 已置顶 → 再次点击提升到最前面
+        return { tasks: [{ ...task, pinned: true }, ...rest] };
+      }
+      // 未置顶 → 置顶，排到已置顶文件之后（置顶区末尾）
+      const pinnedCount = rest.filter((t) => t.pinned).length;
+      rest.splice(pinnedCount, 0, { ...task, pinned: true });
+      return { tasks: rest };
+    });
+  },
+
+  rotateTask: (id, direction) => {
+    set((s) => ({
+      tasks: s.tasks.map((t) => {
+        if (t.id !== id) return t;
+        const delta = direction === 'cw' ? 90 : -90;
+        const rotation = (((t.rotation ?? 0) + delta) % 360 + 360) % 360;
+        return { ...t, rotation };
+      }),
+    }));
   },
 
   clearTasks: () => {
@@ -454,6 +487,8 @@ export const useConvertStore = create<ConvertState>((set, get) => {
           targetFormat: 'pdf',
           sourceFile: files[0],
           selected: true,
+          pinned: false,
+          rotation: 0,
           items: [{ id: itemId, targetFormat: 'pdf', status: 'converting' as TaskStatus, progress: 0 }],
         },
       ],
@@ -461,7 +496,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
 
     try {
       const blob = await withTimeout(
-        convertImagesToPdf(files, state.imageOptions, state.pdfMergeOptions, (progress) => {
+        convertImagesToPdf(imageTasks, state.imageOptions, state.pdfMergeOptions, (progress) => {
           set((s) => ({
             tasks: s.tasks.map((t) =>
               t.id === taskId

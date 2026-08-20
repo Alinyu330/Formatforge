@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trash2, Download, CheckCircle2, AlertCircle, Loader2, Eye, GripVertical } from 'lucide-react';
+import { Trash2, Download, CheckCircle2, AlertCircle, Loader2, Eye, GripVertical, Pin, RotateCcw, RotateCw } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import { formatFileSize, getAvailableTargetFormats, stripExtension } from '@/utils/format';
 import FormatMultiSelector from '@/components/FormatMultiSelector';
@@ -9,6 +9,8 @@ export default function ConvertQueue() {
     tasks,
     removeTask,
     moveTask,
+    pinTask,
+    rotateTask,
     downloadItem,
     setPreviewTask,
     previewSourceFile,
@@ -131,6 +133,26 @@ export default function ConvertQueue() {
                   {formatFileSize(task.fileSize)} · {task.sourceFormat}
                 </span>
               </div>
+              <button
+                onClick={() => pinTask(task.id)}
+                className={`p-1 sm:p-1.5 rounded-lg transition-colors shrink-0 ${task.pinned ? 'text-[#f59e0b] hover:bg-[#f59e0b]/10' : 'text-[var(--text-faint)] hover:text-[#f59e0b] hover:bg-[#f59e0b]/10'}`}
+                title={task.pinned ? '已置顶，点击提到最前' : '置顶'}
+              >
+                <Pin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${task.pinned ? 'fill-current' : ''}`} />
+              </button>
+              {task.convertType === 'image' && (
+                <>
+                  <button onClick={() => rotateTask(task.id, 'ccw')} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="逆时针旋转 90°">
+                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                  <button onClick={() => rotateTask(task.id, 'cw')} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="顺时针旋转 90°">
+                    <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+                  {(task.rotation ?? 0) !== 0 && (
+                    <span className="text-[9px] text-[#00d4ff] font-medium shrink-0">{task.rotation}°</span>
+                  )}
+                </>
+              )}
               <button onClick={() => previewSourceFile(task.id)} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="预览源文件">
                 <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>

@@ -3,7 +3,7 @@ import type { ConvertTask, ImageOptions, PdfMergeOptions } from '@/types';
 export async function convertImage(task: ConvertTask, onProgress: (p: number) => void): Promise<Blob> {
   onProgress(10);
 
-  const canvas = await renderImageToCanvas(task.sourceFile, task.imageOptions);
+  const canvas = await renderImageToCanvas(task.sourceFile, task.imageOptions, task.rotation ?? 0);
   onProgress(60);
 
   const quality = task.imageOptions?.quality ?? 0.92;
@@ -51,10 +51,11 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
 }
 
 /** 将多张图片按顺序渲染到画布，返回画布数组（每张应用尺寸约束） */
-function renderImageToCanvas(file: File, options?: ImageOptions): Promise<HTMLCanvasElement> {
+function renderImageToCanvas(file: File, options?: ImageOptions, rotation = 0): Promise<HTMLCanvasElement> {
   return loadImage(file).then((img) => {
     const canvas = document.createElement('canvas');
-    let { width, height } = img;
+    let width = img.width;
+    let height = img.height;
 
     if (options?.maxWidth && width > options.maxWidth) {
       height = Math.round((options.maxWidth / width) * height);
@@ -65,10 +66,19 @@ function renderImageToCanvas(file: File, options?: ImageOptions): Promise<HTMLCa
       height = options.maxHeight;
     }
 
-    canvas.width = width;
-    canvas.height = height;
+    const norm = ((rotation % 360) + 360) % 360;
+    const swap = norm === 90 || norm === 270;
+    canvas.width = swap ? height : width;
+    canvas.height = swap ? width : height;
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, 0, 0, width, height);
+    if (norm !== 0) {
+      const rad = (norm * Math.PI) / 180;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(rad);
+      ctx.drawImage(img, -width / 2, -height / 2, width, height);
+    } else {
+      ctx.drawImage(img, 0, 0, width, height);
+    }
     return canvas;
   });
 }
@@ -107,7 +117,7 @@ function computePdfPage(w: number, h: number, margin: number, orientation: PdfMe
 
 /** 将多张图片合并为一个多页 PDF 文件 */
 export async function convertImagesToPdf(
-  files: File[],
+  tasks: ConvertTask[],
   options: ImageOptions | undefined,
   pdfOptions: PdfMergeOptions,
   onProgress: (p: number) => void
@@ -116,11 +126,11 @@ export async function convertImagesToPdf(
   const quality = options?.quality ?? 0.92;
   const margin = Math.max(0, pdfOptions.margin ?? 0);
   const orientation = pdfOptions.orientation ?? 'auto';
-  const total = files.length;
+  const total = tasks.length;
 
   const canvases: HTMLCanvasElement[] = [];
   for (let i = 0; i < total; i++) {
-    canvases.push(await renderImageToCanvas(files[i], options));
+    canvases.push(await renderImageToCanvas(tasks[i].sourceFile, options, tasks[i].rotation ?? 0));
     onProgress(Math.round(((i + 1) / total) * 80));
   }
 

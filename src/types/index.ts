@@ -63,6 +63,8 @@ export interface ConvertTask {
   resultUrl?: string;
   customName?: string;
   selected: boolean;
+  pinned: boolean;
+  rotation?: number;
   audioOptions?: AudioOptions;
   imageOptions?: ImageOptions;
   videoOptions?: VideoOptions;
