@@ -1,8 +1,21 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v14 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v15 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v15 — WMA / TIFF 预览解码 + 安卓端转换按钮修复
+
+### 新功能 🚀
+- WMA 音频预览：浏览器无法原生解码 WMA，现通过 FFmpeg WASM 实时转码为 WAV 播放预览
+- TIFF 图片预览：浏览器无法原生显示 TIFF，现通过 FFmpeg WASM 实时转码为 PNG 显示预览
+
+### 问题修复 🐛
+- 修复安卓端网页「开始转换」按钮点击无响应的问题：为转换按钮补充 `type="button"` 与触摸事件（`onTouchEnd`）处理，兼容 Android WebView 的触摸交互
+
+> Commit: `85fb7bb`
 
 ---
 
