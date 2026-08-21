@@ -14,16 +14,22 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe)
 
-   可复制链接：
+   可复制链接（国内主链接，CDN 加速）：
+
+   ```
+   https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe
+   ```
+
+   备用链接（GitHub，国内网络可能无法访问）：
 
    ```
    https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe
    ```
 
    下载后双击安装即可；首次启动为窗口化，可最大化 / 还原，内置原生 FFmpeg 引擎
-   > 提示：安装包托管在 GitHub，国内网络可能无法访问；打不开时可用下方 PWA 方式安装（功能一致），或稍后重试
+   > 提示：两个链接都打不开时，可用下方 PWA 方式安装（功能一致）
 2. 或使用 **Chrome** / **Edge** 浏览器打开应用网址，点击地址栏右侧的 **安装图标** (⊕) 安装为 PWA 桌面应用
 3. 安装后可在桌面/开始菜单直接启动，完全离线运行
 
