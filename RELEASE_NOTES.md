@@ -1,8 +1,23 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v15 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v16 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v16 — 音频视频转换修复 + 手机端 KGG 解密
+
+### 问题修复 🐛
+- 修复音频/视频格式转换失败的问题：Electron 客户端原生 FFmpeg 桥接检测失败，导致回退到 WASM 后加载超时；现改为优先通过 Capacitor 平台接口识别环境，并将「存在 electronFFmpeg 桥接」直接判定为 Electron 客户端，恢复原生转换
+- 修复 Android 端音频编解码参数构建冗余，统一复用 `buildAudioFormatArgs`，确保与 Web 端编解码器映射一致
+
+### 新功能 🚀
+- 手机端 KGG（酷狗新版加密）解密：新增 `KugouNative` 原生插件，自动检测设备 Root 权限并读取本机酷狗客户端的密钥库（KGMusicV3.db）
+- Root 设备：在音频选项中一键「自动读取密钥库」完成 KGG/FLAC、MFLAC、MGG 等酷狗加密文件解密，无需手动导入
+- 未 Root 设备：自动提示无法读取本机密钥库，引导通过「手机端粘贴导入密钥」粘贴电脑端导出的密钥文本完成解密
+
+> Commit: `a04847c`
 
 ---
 
