@@ -1,8 +1,20 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v12 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v13 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v13 — QQ 音乐解密代理国内可达
+
+### 问题修复 🐛
+- 修复 QQ 音乐解密 CORS 代理在国内不可达的问题：代理由 Cloudflare `*.workers.dev`（国内被墙）切换为自定义域名 `qq.formatforge.asia`，国内用户网页端解密恢复正常
+
+### 新功能 🚀
+- 新增 Worker 部署配置 `worker/wrangler.toml`（自定义域名路由），便于后续重部署
+
+> Commit: `6b8eb57`
 
 ---
 
@@ -79,5 +91,5 @@
 ---
 
 ## 使用说明
-- 上述为 v6 – v11 的发布记录；更早版本（v1 – v5）见 [README.md](README.md#L133) 版本历史。
+- 上述为 v6 – v13 的发布记录；更早版本（v1 – v5）见 [README.md](README.md#L133) 版本历史。
 - 各版本 Release 标题建议遵循 `v{n}` 命名，标签为 `backup-20260820-v{n}`（如需独立版本标签，建议另建 `v{n}` tag）。

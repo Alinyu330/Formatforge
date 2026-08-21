@@ -134,6 +134,10 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 
+### v13 — QQ 音乐解密代理国内可达
+- **修复**：QQ 音乐解密代理在国内不可达的问题——代理由 Cloudflare `*.workers.dev`（国内被墙）切换为自定义域名 `qq.formatforge.asia`
+- **新增**：Worker 部署配置 `worker/wrangler.toml`（自定义域名路由）
+
 ### v12 — 修复生产环境 QQ 音乐解密
 - **修复**：修复生产环境（网页端）QQ 音乐加密音频（MFLAC/QMC 等）解密失败问题——原直连 QQ 音乐接口被浏览器跨域（CORS）拦截，现改经 Cloudflare Worker 代理转发
 
