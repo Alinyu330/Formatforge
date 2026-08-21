@@ -14,22 +14,20 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. 用 **Chrome** 或 **Edge** 浏览器打开应用网址
-2. 点击地址栏右侧的 **安装图标** (⊕) 即可安装为桌面应用
+1. **Windows 客户端（推荐）**：下载 [FormatForge-Setup-1.2.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe) 双击安装；首次启动为窗口化，可最大化 / 还原，内置原生 FFmpeg 引擎
+2. 或使用 **Chrome** / **Edge** 浏览器打开应用网址，点击地址栏右侧的 **安装图标** (⊕) 安装为 PWA 桌面应用
 3. 安装后可在桌面/开始菜单直接启动，完全离线运行
 
 ### Android 端
 
-1. **直接下载安装客户端（APK）**：[FormatForge-v16.1.apk](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装）
-   - 若国内域名无法访问，备用下载：[GitHub Release](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260820-v16/FormatForge-v16.1.apk)
+1. **直接下载安装客户端（APK）**：[FormatForge-v18.apk](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-v18.apk)（手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装）
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
 
 ### iOS 端（iPhone / iPad）
 
-1. 用 **Safari** 浏览器打开应用网址
-2. 点击底部 **分享按钮** → **"添加到主屏幕"**
-3. 命名后点击添加，主屏幕即出现应用图标
+1. 用 **Safari** 浏览器打开应用网址 → 点击底部 **分享按钮** → **"添加到主屏幕"** 即可安装为 PWA
+2. 原生 App 交付：仓库已提供 Capacitor/Xcode 工程（`ios/`），需在 macOS 上用 Xcode 完成签名与归档以生成 IPA
 
 ---
 
@@ -136,6 +134,14 @@ npm run preview
 ## 版本历史
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
+
+### v18 — 转换稳定性修复 + KGG 跨端密钥迁移 + 三端安装包
+- **修复**：偶现「开始转换」按钮无响应（PC / 移动端 / 客户端均受影响）——核心原因是 FFmpeg WASM 引擎失败或超时后 Worker 未真正终止，成为僵尸引擎导致后续任务卡死；现失败/超时后主动 terminate 并清理状态
+- **修复**：FFmpeg progress/log 监听器随每次转换累积，改为实例级单次监听
+- **修复**：移除转换按钮的 onTouchEnd 触摸 hack，统一使用标准 click，避免移动端 touchend 后合成 click 重复触发
+- **修复**：KGMusicV3.db 在 PC 复制后移动端无法粘贴使用——导出增加 format/version 包装，导入容错支持 BOM、Markdown、新旧格式；剪贴板失败回退 execCommand
+- **新增**：Windows 客户端安装包（内置原生 ffmpeg.exe，默认窗口化、可最大化/还原）
+- **新增**：Android APK、iOS Capacitor/Xcode 工程交付
 
 ### v17 — 移动端稳定性与 PWA 自动更新
 - **修复**：修复移动端转换按钮在部分旧缓存环境中显示无响应的问题，所有转换页面统一使用 `type="button"` 与触摸事件处理

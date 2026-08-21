@@ -1,8 +1,32 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v17 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v18 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v18 — 转换稳定性修复 + KGG 跨端密钥迁移 + 三端安装包
+
+### 问题修复 🐛
+- 修复偶现「开始转换」按钮无响应（PC 网页 / Windows 客户端 / 移动端 / Android WebView 均受影响）：核心原因是 FFmpeg WASM 引擎在转换失败或超时后 Worker 未真正终止，成为「僵尸引擎」，导致后续任务 writeFile/exec 排队卡死；现统一 FFmpeg 单例生命周期，失败/超时后主动 `terminate()` 并清理状态
+- 修复 FFmpeg progress/log 监听器随每次转换累积导致的内存与状态混乱：改为实例级单次监听，通过 `activeProgressCb` 分发当前任务进度，日志最多保留 400 条
+- 移除转换按钮上的 `onTouchEnd` 触摸 hack：移动端 touchend 后浏览器会再派发合成 click，导致一次触摸可能重复启动或事件状态异常；四个转换页面统一只使用标准 `click`
+- 修复 KGMusicV3.db 在 PC 复制后移动端无法粘贴使用的问题：导出格式增加 `format/version` 包装；导入容错支持 UTF-8 BOM、Markdown 代码围栏、聊天软件附加说明文字、新旧两种格式；剪贴板写入失败时回退 `execCommand('copy')`，移动端支持 `readText()` 与手动粘贴
+
+### 新功能 🚀
+- Windows 客户端安装包：内置原生 `ffmpeg.exe`，转换走原生引擎；首次启动默认窗口化（1000×800），可最大化 / 还原
+- Android APK 安装包（versionCode 3 / versionName 1.2）
+- iOS Capacitor/Xcode 工程（已纳入版本库；Windows 无法签名 IPA，最终 IPA 需在 macOS/Xcode 完成签名归档）
+
+### 验证
+- 桌面 Chrome 真实 WAV→MP3 转换通过（15.67 KB → 33.51 KB）
+- 390×844 移动视口双文件批量转换通过（两个文件均完成，输出各 33.51 KB）
+- 多文件上传后任务列表保留全部文件
+- Electron 安装包内置 ffmpeg.exe 已就位并验证 `ffmpeg -version`
+
+> Commit: `678a40f`
+> Backup tag: `backup-20260822-v18`
 
 ---
 
