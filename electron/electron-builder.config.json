@@ -9,8 +9,13 @@
     "assets/**/*",
     "build/**/*",
     "capacitor.config.*",
-    "app/**/*"
+    "app/**/*",
+    "!app/assets/*.wasm",
+    "!app/assets/*.map",
+    "!app/**/*.apk",
+    "!app/**/*.exe"
   ],
+  "afterPack": "./after-pack.js",
   "extraResources": [
     {
       "from": "resources/ffmpeg.exe",
