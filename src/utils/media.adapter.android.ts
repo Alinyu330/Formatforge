@@ -5,11 +5,12 @@
  */
 import type { MediaAdapter } from './media.adapter';
 import type { ConvertTask } from '@/types';
-import { getFFmpeg } from './media.adapter.wasm';
-import { isQMCFile, decryptQMC } from './qmc';
+import { getFFmpeg, buildAudioFormatArgs } from './media.adapter.wasm';
+import { isQMCFile, decryptQMC, isMusicexFormat, parseMusicexFooter, decryptMusicexWithEkey, fetchEkeyFromAPI, MusicexNeedsEkeyError } from './qmc';
 import { isNCMFile, decryptNCM } from './ncm';
 import { isKGMFile, decryptKGM } from './kgm';
-import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount } from './kgg';
+import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb } from './kgg';
+import { KugouNative, base64ToBytes } from './kugou-native';
 
 // Android 设备可能性能较弱，使用更长的超时时间
 const ANDROID_LOAD_TIMEOUT_MS = 120000;    // 2分钟（旧设备 WASM 编译慢）
@@ -23,13 +24,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-// 音频编解码映射（同 WASM 实现）
-const audioCodecMap: Record<string, string> = {
-  mp3: 'libmp3lame', flac: 'flac', aac: 'aac', m4a: 'aac',
-  ogg: 'libvorbis', opus: 'libopus', wma: 'wmav2', alac: 'alac',
-  ape: 'ape', ac3: 'ac3', eac3: 'eac3', amr: 'libopencore_amrnb',
-};
-
 const videoCodecMap: Record<string, string> = {
   mp4: 'libx264', mkv: 'libx264', mov: 'libx264', avi: 'mpeg4',
   flv: 'flv', wmv: 'wmv2', mpeg: 'mpeg2video', mpg: 'mpeg2video',
@@ -37,7 +31,7 @@ const videoCodecMap: Record<string, string> = {
 };
 
 const videoAudioCodecMap: Record<string, string> = {
-  mp4: 'aac', mkv: 'aac', mov: 'aac', avi: 'libmp3lame', flv: 'libmp3lame',
+  mp4: 'aac', mkv: 'aac', mov: 'aac', avi: 'mp3', flv: 'mp3',
   wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'aac',
   ts: 'aac', ogv: 'libvorbis', webm: 'libopus',
 };
@@ -50,6 +44,30 @@ function isRecognizedAudio(data: Uint8Array): boolean {
     if (data.length >= 8 && data[4] === 0x66 && data[5] === 0x74 && data[6] === 0x79 && data[7] === 0x70) return true;
   }
   return false;
+}
+
+// ============== 酷狗密钥库 Root 自动读取 ==============
+
+interface KugouKeyDbLoadResult {
+  loaded: boolean;
+  rooted: boolean;
+  message?: string;
+}
+
+/** 尝试在 root 设备上自动读取酷狗音乐客户端的密钥库（KGMusicV3.db） */
+async function tryLoadKugouKeyDbFromRoot(): Promise<KugouKeyDbLoadResult> {
+  try {
+    const { data } = await KugouNative.readKugouKeyDb();
+    if (data) {
+      const bytes = base64ToBytes(data);
+      const count = importKugouKeyDb(bytes);
+      return { loaded: true, rooted: true, message: `已自动读取 ${count} 个密钥` };
+    }
+    const { rooted } = await KugouNative.isRooted();
+    return rooted ? { loaded: false, rooted: true } : { loaded: false, rooted: false };
+  } catch (err) {
+    return { loaded: false, rooted: false, message: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 // ============== 音频转换 ==============
@@ -68,9 +86,43 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     onProgress(2);
     const raw = new Uint8Array(await task.sourceFile.arrayBuffer());
     onProgress(10);
-    const result = await decryptQMC(raw);
-    inputData = result.data;
-    actualSourceFormat = result.ext;
+    if (isMusicexFormat(raw)) {
+      const info = parseMusicexFooter(raw);
+      const cred = task.audioOptions?.qmCredentials;
+      if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
+        throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+      }
+      if (!info?.mediaMid || !info?.filename) {
+        throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');
+      }
+      const { ekey } = await fetchEkeyFromAPI(cred, info.mediaMid, info.filename, '20');
+      const result = await decryptMusicexWithEkey(raw, ekey);
+      inputData = result.data;
+      actualSourceFormat = result.ext;
+    } else {
+      try {
+        const result = await decryptQMC(raw);
+        inputData = result.data;
+        actualSourceFormat = result.ext;
+      } catch (error) {
+        if (error instanceof MusicexNeedsEkeyError) {
+          const cred = task.audioOptions?.qmCredentials;
+          const info = error.info;
+          if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
+            throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+          }
+          if (!info?.mediaMid || !info?.filename) {
+            throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');
+          }
+          const { ekey } = await fetchEkeyFromAPI(cred, info.mediaMid, info.filename, '20');
+          const musicexResult = await decryptMusicexWithEkey(raw, ekey);
+          inputData = musicexResult.data;
+          actualSourceFormat = musicexResult.ext;
+        } else {
+          throw error;
+        }
+      }
+    }
     onProgress(30);
   } else if (isNCMFile(task.fileName)) {
     onProgress(2);
@@ -93,7 +145,14 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     const raw = new Uint8Array(await task.sourceFile.arrayBuffer());
     onProgress(10);
     if (!hasKugouKeyDb()) {
-      throw new Error('KGG（酷狗新版加密）需要密钥库才能解密。请先在「酷狗 KGG 密钥库」导入 KGMusicV3.db 密钥数据库文件（需来自已登录的酷狗客户端）。');
+      // 尝试在 Root 设备上自动读取酷狗客户端密钥库
+      const attempt = await tryLoadKugouKeyDbFromRoot();
+      if (!attempt.loaded) {
+        if (attempt.rooted) {
+          throw new Error('已检测到 Root 权限，但未在酷狗客户端数据目录找到密钥库。请确认已安装并登录酷狗音乐 Android 客户端后再试，或改用电脑端导入 KGMusicV3.db 密钥。');
+        }
+        throw new Error('KGG（酷狗新版加密）解密需要酷狗客户端的密钥库。当前设备未 Root，无法自动读取本机密钥库。请在电脑端已登录酷狗的酷狗客户端中「复制密钥文本」发送到手机，并粘贴到下方「手机端粘贴导入密钥」中导入（纯本地解析，不会上传）。');
+      }
     }
     const keyId = extractKGGKeyId(raw);
     const encryptionKey = getKugouKey(keyId);
@@ -123,18 +182,7 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
 
   const args: string[] = ['-i', inputName, '-vn'];
   if (task.audioOptions) {
-    const codec = audioCodecMap[task.targetFormat];
-    if (codec) args.push('-codec:a', codec);
-    if (
-      task.targetFormat !== 'wav' &&
-      task.targetFormat !== 'aiff' &&
-      task.targetFormat !== 'au' &&
-      task.targetFormat !== 'caf' &&
-      task.audioOptions.bitrate !== 'lossless'
-    ) {
-      args.push('-b:a', task.audioOptions.bitrate);
-    }
-    if (task.audioOptions.sampleRate) args.push('-ar', String(task.audioOptions.sampleRate));
+    args.push(...buildAudioFormatArgs(task.targetFormat, task.audioOptions));
   }
   args.push('-y', outputName);
 
@@ -153,6 +201,7 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
   const mimeMap: Record<string, string> = {
     mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
     aac: 'audio/aac', ogg: 'audio/ogg', m4a: 'audio/mp4',
+    wma: 'audio/x-ms-wma', opus: 'audio/opus', webm: 'audio/webm',
   };
   const blob = new Blob([data], { type: mimeMap[task.targetFormat] ?? 'audio/mpeg' });
 

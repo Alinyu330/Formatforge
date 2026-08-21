@@ -106,7 +106,7 @@ export async function preloadFFmpeg(): Promise<void> {
 // ============== 音频编解码映射 ==============
 
 // 每个格式独立构建 FFmpeg 参数，互不干扰
-function buildAudioFormatArgs(targetFormat: string, audioOptions: { bitrate: string; sampleRate?: number }): string[] {
+export function buildAudioFormatArgs(targetFormat: string, audioOptions: { bitrate: string; sampleRate?: number }): string[] {
   const args: string[] = [];
 
   switch (targetFormat) {

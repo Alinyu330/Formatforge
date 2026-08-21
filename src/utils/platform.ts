@@ -9,15 +9,19 @@ let cachedPlatform: Platform | null = null;
 export function getPlatform(): Platform {
   if (cachedPlatform !== null) return cachedPlatform;
 
-  // Android Capacitor 环境检测必须优先，避免被 UA 误判为 Electron
-  if ((window as any).Capacitor?.getPlatform?.() === 'android') {
+  // Capacitor 环境检测（Android / Electron），避免依赖脆弱的 UA 判断
+  const capPlatform = (window as any).Capacitor?.getPlatform?.();
+  if (capPlatform === 'android') {
     cachedPlatform = 'android';
     return cachedPlatform;
   }
+  if (capPlatform === 'electron') {
+    cachedPlatform = 'electron';
+    return cachedPlatform;
+  }
 
-  // Electron 环境必须同时具有原生 bridge 和对应 UA 标识
-  const ua = navigator.userAgent.toLowerCase();
-  if ((window as any).electronFFmpeg && (ua.includes('electron') || ua.includes('formatforge'))) {
+  // Electron 环境只要有原生 FFmpeg 桥接即为桌面端（桥接仅由 preload 注入）
+  if ((window as any).electronFFmpeg) {
     cachedPlatform = 'electron';
     return cachedPlatform;
   }

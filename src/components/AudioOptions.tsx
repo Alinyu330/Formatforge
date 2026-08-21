@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useConvertStore } from '@/store/convertStore';
 import { KUGOU_MUSIC_ENCRYPTED_EXTENSIONS, NETEASE_MUSIC_ENCRYPTED_EXTENSIONS, isQQMusicEncryptedExt } from '@/utils/format';
 import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb, exportKugouKeyMap, importKugouKeyMapFromText, listKugouKeyIds } from '@/utils/kgg';
+import { getPlatform } from '@/utils/platform';
+import { KugouNative, base64ToBytes } from '@/utils/kugou-native';
 
 function readCookieValue(rawCookie: string, key: string): string {
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -29,6 +31,42 @@ export default function AudioOptions() {
   const [kggText, setKggText] = useState('');
   const [kggPasteError, setKggPasteError] = useState('');
   const [kggCopied, setKggCopied] = useState(false);
+  const isAndroid = getPlatform() === 'android';
+  const [rootStatus, setRootStatus] = useState<'unknown' | 'rooted' | 'noroot'>('unknown');
+  const [rootReading, setRootReading] = useState(false);
+
+  // Android 设备且未导入密钥库时，检测 root 状态，用于展示提示界面
+  useEffect(() => {
+    if (!isAndroid || !hasKGG || hasKugouKeyDb()) return;
+    let cancelled = false;
+    KugouNative.isRooted()
+      .then(({ rooted }) => {
+        if (!cancelled) setRootStatus(rooted ? 'rooted' : 'noroot');
+      })
+      .catch(() => {
+        if (!cancelled) setRootStatus('noroot');
+      });
+    return () => { cancelled = true; };
+  }, [isAndroid, hasKGG]);
+
+  const handleRootRead = async () => {
+    setRootReading(true);
+    setKggError('');
+    setKggPasteError('');
+    try {
+      const { data } = await KugouNative.readKugouKeyDb();
+      if (!data) {
+        setKggError('未找到酷狗密钥库，请确认已安装并登录酷狗音乐客户端');
+        return;
+      }
+      const count = importKugouKeyDb(base64ToBytes(data));
+      setKggStatus(`已自动读取 ${count} 个密钥`);
+    } catch (err) {
+      setKggError(err instanceof Error ? err.message : '自动读取密钥库失败');
+    } finally {
+      setRootReading(false);
+    }
+  };
 
   const handleKGGImport = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -102,6 +140,26 @@ export default function AudioOptions() {
               <span className="text-[var(--text-muted)]">（即 C:\Users\你的用户名\AppData\Roaming\KuGou8\KGMusicV3.db）</span>
             </p>
           </div>
+
+          {isAndroid && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 space-y-1.5">
+              {rootStatus === 'rooted' ? (
+                <>
+                  <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">已检测到 Root 权限</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">可自动读取本机酷狗客户端（需已安装并登录）的密钥库完成解密，无需手动导入。</p>
+                  <button onClick={handleRootRead} disabled={rootReading} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium bg-amber-500 text-[#0f1724] hover:bg-amber-500/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all">{rootReading ? '读取中...' : '自动读取密钥库'}</button>
+                </>
+              ) : rootStatus === 'noroot' ? (
+                <>
+                  <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">未检测到 Root 权限，无法自动读取密钥库</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">请在下方向「手机端粘贴导入密钥」粘贴电脑端导出的密钥文本，否则 KGG 文件无法转换。</p>
+                </>
+              ) : (
+                <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">正在检测 Root 权限…</p>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2">
             <input ref={fileInputRef} type="file" accept=".db" className="hidden" onChange={handleKGGImport} />
             <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all">{importing ? '解析中...' : '导入 KGMusicV3.db'}</button>
