@@ -1,8 +1,22 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v13 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v14 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v14 — 视频格式预览与转换修复
+
+### 问题修复 🐛
+- 修复 FLV、AVI、WMV、MPEG、MPG、TS 格式在网页端（WASM）和客户端（Electron / Android）无法预览播放的问题
+- 修复 GIF 被误识别为视频、无法预览的问题，现正确作为图片预览
+- 修复 WebM、3GP、OGV 转换后输出大小为 0B 无法播放的问题：统一三平台视频/音频编解码器映射（WebM → libvpx/libopus，3GP → mpeg4/aac，OGV → libtheora/libvorbis），并移除不再适用的 VP9/H.263/strict 参数
+
+### 性能优化 ⚡
+- 统一 Web / Android / Electron 三平台视频编解码器配置，确保各平台格式支持一致
+
+> Commit: `5ab709c`
 
 ---
 

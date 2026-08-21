@@ -38,7 +38,7 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 |  | QQ音乐解密 | QMC0/QMC3/QMC4/MFLAC/MGG 等 |
 |  | 网易云解密 | NCM |
 |  | 酷狗解密 | KGM/KGMA/KWM、KGG |
-| **视频转换** | 格式互转 + 速度/质量/分辨率调节 | MP4、MKV、WebM、MOV、AVI、FLV 等 |
+| **视频转换** | 格式互转 + 速度/质量/分辨率调节 | MP4、MKV、WebM、MOV、AVI、FLV、WMV、MPEG、TS、3GP、OGV 等 |
 | **表格转换** | 电子表格格式互转 | XLSX、CSV、ODS、HTML 等 |
 | **图片转换** | 图片格式互转 + 尺寸/质量/旋转 | PNG、JPEG、WebP、BMP、ICO、TIFF 等 |
 | **文档转换** | 办公文档提取 | DOCX、PPTX → TXT/HTML/PDF |
@@ -133,6 +133,12 @@ npm run preview
 ## 版本历史
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
+
+### v14 — 视频格式预览与转换修复
+- **修复**：FLV、AVI、WMV、MPEG、MPG、TS 格式在网页端和客户端无法预览播放的问题
+- **修复**：GIF 被误识别为视频的问题，现正确作为图片预览
+- **修复**：WebM、3GP、OGV 转换后大小为 0B 无法播放的问题
+- **优化**：统一 Web / Android / Electron 三平台视频编解码器配置，确保格式支持一致
 
 ### v13 — QQ 音乐解密代理国内可达
 - **修复**：QQ 音乐解密代理在国内不可达的问题——代理由 Cloudflare `*.workers.dev`（国内被墙）切换为自定义域名 `qq.formatforge.asia`
