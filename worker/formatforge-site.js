@@ -41,5 +41,22 @@ async function handle(request) {
     init.body = await request.arrayBuffer();
   }
 
-  return fetch(UPSTREAM + path + url.search, init);
+  const response = await fetch(UPSTREAM + path + url.search, init);
+
+  // 下载文件与 404 页面禁止缓存，避免部署窗口期或版本更新后，
+  // 客户端/CDN 仍命中旧缓存（如误把 APK 请求缓存的 404 页面）
+  const isDownload = path.toLowerCase().endsWith('.apk');
+  const is404 = response.status === 404;
+  if (isDownload || is404) {
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    if (is404) newHeaders.set('Pragma', 'no-cache');
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  }
+
+  return response;
 }
