@@ -21,7 +21,7 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 ### Android 端
 
 1. **直接下载安装客户端（APK）**：[FormatForge-v16.1.apk](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装）
-   - 若国内域名无法访问，备用下载：[GitHub Release](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260820-v16/FormatForge-v16.apk)
+   - 若国内域名无法访问，备用下载：[GitHub Release](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260820-v16/FormatForge-v16.1.apk)
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
 
