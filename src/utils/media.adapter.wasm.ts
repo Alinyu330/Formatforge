@@ -26,6 +26,36 @@ let ffmpeg: FFmpeg | null = null;
 let loadingPromise: Promise<FFmpeg> | null = null;
 let preloadStarted = false;
 
+let activeProgressCb: ((p: number) => void) | null = null;
+let recentLogs: string[] = [];
+
+function attachInstanceHandlers(instance: FFmpeg): void {
+  instance.on('progress', ({ progress }: { progress: number }) => {
+    try {
+      activeProgressCb?.(progress);
+    } catch {
+      return;
+    }
+  });
+  instance.on('log', ({ message }: { message: string }) => {
+    recentLogs.push(message);
+    if (recentLogs.length > 400) recentLogs.splice(0, recentLogs.length - 400);
+  });
+}
+
+function resetFFmpegEngine(instance: FFmpeg | null = ffmpeg): void {
+  if (ffmpeg === instance) ffmpeg = null;
+  loadingPromise = null;
+  preloadStarted = false;
+  activeProgressCb = null;
+  recentLogs = [];
+  try {
+    instance?.terminate();
+  } catch (error) {
+    console.warn('[WASM-FFmpeg] 终止旧实例失败:', error);
+  }
+}
+
 // ============== 工具函数 ==============
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -46,27 +76,9 @@ async function loadFFmpegInstance(): Promise<FFmpeg> {
     ENGINE_LOAD_TIMEOUT_MS,
     '音频/视频转换引擎加载超时（WASM 编译过慢），请刷新页面后重试',
   );
+  attachInstanceHandlers(instance);
   console.log('[WASM-FFmpeg] 引擎加载完成');
-
-  // 诊断：列出可用的编码器和格式
-  try {
-    const encLogs: string[] = [];
-    const logHandler = ({ message }: { message: string }) => { encLogs.push(message); };
-    instance.on('log', logHandler);
-    await instance.exec(['-encoders']);
-    const audioEncoders = encLogs.filter(l => l.startsWith(' A') || l.startsWith('  A'));
-    console.log('[WASM-FFmpeg] 可用音频编码器:', audioEncoders);
-    encLogs.length = 0;
-    await instance.exec(['-formats']);
-    const formats = encLogs.filter(l => l.startsWith(' D') || l.startsWith('  D') || l.startsWith(' DE') || l.startsWith('  DE') || l.startsWith('  E') || l.startsWith(' E'));
-    console.log('[WASM-FFmpeg] 可用格式:', formats);
-    instance.off('log', logHandler);
-  } catch (e) {
-    console.warn('[WASM-FFmpeg] 编码器检测失败:', e);
-  }
-
   return instance;
-
 }
 
 export async function getFFmpeg(): Promise<FFmpeg> {
@@ -294,9 +306,6 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
 
   const inputName = `in-${Date.now()}.${actualSourceFormat}`;
   const outputName = `out-${Date.now()}.${task.targetFormat}`;
-
-  await ff.writeFile(inputName, inputData);
-
   const args: string[] = ['-i', inputName, '-vn'];
 
   if (task.audioOptions) {
@@ -304,60 +313,48 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
   }
 
   args.push('-y', outputName);
-
-
-  ff.on('progress', ({ progress }) => {
-    const base = wasDecrypted ? 30 : 15;
+  const base = wasDecrypted ? 30 : 15;
+  activeProgressCb = (progress) => {
     onProgress(Math.round(base + progress * (100 - base)));
-  });
-
-  // 捕获 FFmpeg 日志用于调试
-  const ffLogs: string[] = [];
-  ff.on('log', ({ message }) => {
-    ffLogs.push(message);
-  });
+  };
+  recentLogs = [];
 
   try {
+    await ff.writeFile(inputName, inputData);
     await withTimeout(
       ff.exec(args),
       CONVERSION_TIMEOUT_MS,
       `音频"${task.fileName}"转换超时，文件可能过大，请尝试降低比特率`,
     );
-  } catch (error) {
-    // RuntimeError（WASM 内存越界）会损坏 FFmpeg 实例，需要销毁重建
-    if (error instanceof Error && error.name === 'RuntimeError') {
-      console.error(`[FFmpeg] WASM 内存错误，销毁实例以重建: ${task.fileName} → ${task.targetFormat}`, { args: args.join(' '), logs: ffLogs, error });
-      ffmpeg = null;
-      loadingPromise = null;
-    } else {
-      console.error(`[FFmpeg] 转换失败: ${task.fileName} → ${task.targetFormat}`, { args: args.join(' '), logs: ffLogs, error });
+
+    const data = await ff.readFile(outputName);
+    const outputSize = data instanceof Uint8Array ? data.length : (typeof data === 'string' ? data.length : 0);
+    console.log(`[FFmpeg] ${task.fileName} → ${task.targetFormat}: outputSize=${outputSize} args=${args.join(' ')}`);
+    if (outputSize === 0) {
+      const tail = recentLogs.slice(-8).join(' | ');
+      throw new Error(
+        `转换输出为空（0B）${wasDecrypted ? `，源已解密为 ${actualSourceFormat}` : '，源文件未能正确解密'}` +
+        (tail ? `。FFmpeg 日志：${tail}` : '')
+      );
     }
+    const mimeMap: Record<string, string> = {
+      mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
+      aac: 'audio/aac', ogg: 'audio/ogg', m4a: 'audio/mp4',
+      wma: 'audio/x-ms-wma', opus: 'audio/opus', webm: 'audio/webm',
+    };
+    const blob = new Blob([data], { type: mimeMap[task.targetFormat] ?? 'audio/mpeg' });
+    onProgress(100);
+    return blob;
+  } catch (error) {
+    const logs = [...recentLogs];
+    console.error(`[FFmpeg] 转换失败: ${task.fileName} → ${task.targetFormat}`, { args: args.join(' '), logs, error });
+    resetFFmpegEngine(ff);
     throw error;
+  } finally {
+    activeProgressCb = null;
+    try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
+    try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
   }
-
-  const data = await ff.readFile(outputName);
-  const outputSize = data instanceof Uint8Array ? data.length : (typeof data === 'string' ? data.length : 0);
-  console.log(`[FFmpeg] ${task.fileName} → ${task.targetFormat}: outputSize=${outputSize} args=${args.join(' ')}`);
-  if (outputSize === 0) {
-    console.error(`[FFmpeg] 输出为 0B! stderr:`, ffLogs);
-    const tail = ffLogs.slice(-8).join(' | ');
-    throw new Error(
-      `转换输出为空（0B）${wasDecrypted ? `，源已解密为 ${actualSourceFormat}` : '，源文件未能正确解密'}` +
-      (tail ? `。FFmpeg 日志：${tail}` : '')
-    );
-  }
-  const mimeMap: Record<string, string> = {
-    mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
-    aac: 'audio/aac', ogg: 'audio/ogg', m4a: 'audio/mp4',
-    wma: 'audio/x-ms-wma', opus: 'audio/opus', webm: 'audio/webm',
-  };
-  const blob = new Blob([data], { type: mimeMap[task.targetFormat] ?? 'audio/mpeg' });
-
-  try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
-  try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
-
-  onProgress(100);
-  return blob;
 }
 
 async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => void): Promise<Blob> {
@@ -367,8 +364,6 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   const outputName = `vout-${Date.now()}.${task.targetFormat}`;
 
   onProgress(2);
-  await ff.writeFile(inputName, await fetchFile(task.sourceFile));
-  onProgress(5);
 
   const videoCodec = videoCodecMap[task.targetFormat] || 'libx264';
   const audioCodec = videoAudioCodecMap[task.targetFormat] || 'aac';
@@ -408,33 +403,41 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   }
 
   args.push('-y', outputName);
-
-
-  ff.on('progress', ({ progress }) => {
+  activeProgressCb = (progress) => {
     onProgress(Math.round(5 + progress * 94));
-  });
-
-  await withTimeout(
-    ff.exec(args),
-    CONVERSION_TIMEOUT_MS,
-    `视频"${task.fileName}"转换超时，文件可能过大，请尝试降低分辨率或比特率`,
-  );
-
-
-  const data = await ff.readFile(outputName);
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-
-  try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
-  try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
-
-  onProgress(100);
-  const mimeMap: Record<string, string> = {
-    mp4: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm', mov: 'video/quicktime',
-    avi: 'video/x-msvideo', flv: 'video/x-flv', wmv: 'video/x-ms-wmv', mpeg: 'video/mpeg',
-    mpg: 'video/mpeg', m4v: 'video/x-m4v', '3gp': 'video/3gpp', ts: 'video/mp2t',
-    ogv: 'video/ogg', gif: 'image/gif',
   };
-  return new Blob([bytes], { type: mimeMap[task.targetFormat] ?? 'application/octet-stream' });
+  recentLogs = [];
+
+  try {
+    await ff.writeFile(inputName, await fetchFile(task.sourceFile));
+    onProgress(5);
+    await withTimeout(
+      ff.exec(args),
+      CONVERSION_TIMEOUT_MS,
+      `视频"${task.fileName}"转换超时，文件可能过大，请尝试降低分辨率或比特率`,
+    );
+
+    const data = await ff.readFile(outputName);
+    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+    if (bytes.length === 0) throw new Error('转换输出为空（0B）');
+    onProgress(100);
+    const mimeMap: Record<string, string> = {
+      mp4: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm', mov: 'video/quicktime',
+      avi: 'video/x-msvideo', flv: 'video/x-flv', wmv: 'video/x-ms-wmv', mpeg: 'video/mpeg',
+      mpg: 'video/mpeg', m4v: 'video/x-m4v', '3gp': 'video/3gpp', ts: 'video/mp2t',
+      ogv: 'video/ogg', gif: 'image/gif',
+    };
+    return new Blob([bytes], { type: mimeMap[task.targetFormat] ?? 'application/octet-stream' });
+  } catch (error) {
+    const logs = [...recentLogs];
+    console.error(`[FFmpeg] 转换失败: ${task.fileName} → ${task.targetFormat}`, { args: args.join(' '), logs, error });
+    resetFFmpegEngine(ff);
+    throw error;
+  } finally {
+    activeProgressCb = null;
+    try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
+    try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
+  }
 }
 
 // ============== 导出适配器实例 ==============

@@ -115,27 +115,48 @@ export function importKugouKeyDb(bytes: Uint8Array): number {
   return Object.keys(map).length;
 }
 
-/** 导出当前密钥库为 JSON 文本（用于电脑端导入后复制到手机端粘贴）。 */
 export function exportKugouKeyMap(): string {
   const map = ensureKeyMap();
   if (!map) throw new Error('尚未加载密钥库，请先导入 KGMusicV3.db');
-  return JSON.stringify(map);
+  return JSON.stringify({
+    format: 'formatforge-kgg-keymap',
+    version: 1,
+    keys: map,
+  });
 }
 
-/** 从粘贴的 JSON 文本导入密钥库，返回密钥数量。 */
-export function importKugouKeyMapFromText(text: string): number {
-  let parsed: unknown;
+function extractKeyMapJson(text: string): unknown {
+  const normalized = text.replace(/^\uFEFF/, '').trim();
+  const fenced = normalized.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1]?.trim() || normalized;
   try {
-    parsed = JSON.parse(text.trim());
+    return JSON.parse(candidate);
   } catch {
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(candidate.slice(start, end + 1));
+      } catch {
+        throw new Error('密钥文本不是有效的 JSON');
+      }
+    }
     throw new Error('密钥文本不是有效的 JSON');
   }
+}
+
+export function importKugouKeyMapFromText(text: string): number {
+  const parsed = extractKeyMapJson(text);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('密钥文本格式不正确（应为 {"keyId":"EncryptionKey",...}）');
+    throw new Error('密钥文本格式不正确');
   }
+  const record = parsed as Record<string, unknown>;
+  const source = record.format === 'formatforge-kgg-keymap' && record.keys && typeof record.keys === 'object' && !Array.isArray(record.keys)
+    ? record.keys as Record<string, unknown>
+    : record;
   const map: Record<string, string> = {};
-  for (const [keyId, value] of Object.entries(parsed as Record<string, unknown>)) {
-    if (typeof value === 'string' && value.length > 0) map[keyId] = value;
+  for (const [keyId, value] of Object.entries(source)) {
+    if (typeof value === 'string' && keyId.trim() && value.trim()) map[keyId.trim()] = value.trim();
   }
   if (Object.keys(map).length === 0) {
     throw new Error('密钥文本中没有有效密钥');

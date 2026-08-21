@@ -12,6 +12,19 @@ function readCookieValue(rawCookie: string, key: string): string {
   return match?.[1]?.trim() ?? '';
 }
 
+function copyTextFallback(text: string): boolean {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  return copied;
+}
+
 export default function AudioOptions() {
   const { audioOptions, setAudioOptions, tasks } = useConvertStore();
   const qmCredentials = audioOptions.qmCredentials ?? { uin: '', authst: '', musicKey: '', rawCookie: '', loginType: '2' as const };
@@ -103,12 +116,37 @@ export default function AudioOptions() {
     setKggPasteError('');
     try {
       const text = exportKugouKeyMap();
-      await navigator.clipboard.writeText(text);
+      let copied = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+      if (!copied) copied = copyTextFallback(text);
+      if (!copied) throw new Error('系统禁止访问剪贴板，请使用密钥文件传输');
       setKggCopied(true);
       setTimeout(() => setKggCopied(false), 2000);
     } catch (err) {
       setKggCopied(false);
       setKggPasteError(err instanceof Error ? err.message : '复制失败');
+    }
+  };
+
+  const handleKGGClipboardImport = async () => {
+    setKggPasteError('');
+    try {
+      if (!navigator.clipboard?.readText) throw new Error('当前环境不支持读取剪贴板，请长按文本框手动粘贴');
+      const text = await navigator.clipboard.readText();
+      setKggText(text);
+      const count = importKugouKeyMapFromText(text);
+      setKggStatus(`已加载 ${count} 个密钥`);
+      setKggText('');
+    } catch (err) {
+      setKggStatus('剪贴板导入失败');
+      setKggPasteError(err instanceof Error ? err.message : '剪贴板导入失败');
     }
   };
 
@@ -169,11 +207,12 @@ export default function AudioOptions() {
 
           <div className="border-t border-[var(--border)] pt-2 space-y-2">
             <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">手机端粘贴导入密钥</p>
-            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">在已导入密钥库的电脑上点击「复制密钥文本」，把内容发送到手机后粘贴到下方即可。</p>
-            <textarea value={kggText} onChange={(e) => setKggText(e.target.value)} placeholder='粘贴密钥 JSON 文本，如 {"keyId":"EncryptionKey",...}' rows={4} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-[10px] sm:text-xs text-[var(--text-strong)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[#00d4ff]/50 resize-y font-mono" />
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">请先在电脑端导入 KGMusicV3.db，再复制生成的密钥文本发送到手机；不要直接把数据库文件复制到手机使用。</p>
+            <textarea value={kggText} onChange={(e) => setKggText(e.target.value)} placeholder='粘贴 FormatForge 密钥 JSON 文本' rows={4} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-[10px] sm:text-xs text-[var(--text-strong)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[#00d4ff]/50 resize-y font-mono" />
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={handleKGGPasteImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium bg-[#00d4ff] text-[#0f1724] hover:bg-[#00d4ff]/90 transition-all">粘贴导入</button>
-              <button onClick={handleKGGCopy} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 transition-all">{kggCopied ? '已复制' : '复制密钥文本'}</button>
+              <button type="button" onClick={handleKGGClipboardImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium bg-[#00d4ff] text-[#0f1724] hover:bg-[#00d4ff]/90 transition-all">从剪贴板读取</button>
+              <button type="button" onClick={handleKGGPasteImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 transition-all">导入文本框内容</button>
+              <button type="button" onClick={handleKGGCopy} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 transition-all">{kggCopied ? '已复制' : '复制密钥文本'}</button>
             </div>
             {kggPasteError && <p className="text-[10px] text-red-400 break-all">{kggPasteError}</p>}
           </div>
