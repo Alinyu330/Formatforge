@@ -59,7 +59,9 @@ export default defineConfig({
     }),
     tsconfigPaths({ ignoreConfigErrors: true }),
     stripFfmpegWasm(),
-    VitePWA({
+    // 原生 App（Capacitor）直接从本地资源加载，无需 Service Worker；
+    // 且 SW 在 WebView 内可能劫持导航导致异常，故原生构建禁用 PWA
+    ...(process.env.CAPACITOR ? [] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
@@ -112,6 +114,6 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })]),
   ],
 });

@@ -8,9 +8,15 @@ import DocConvert from '@/pages/DocConvert';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 
+// 原生 App（Capacitor）构建使用相对路径 './'，Router 必须用默认根路径，
+// 否则 basename 会变成 '.' 导致所有路由匹配失败（界面空白）
+const routerBasename = BASE_URL.startsWith('/')
+  ? (BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL)
+  : undefined;
+
 export default function App() {
   return (
-    <Router basename={BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL}>
+    <Router basename={routerBasename}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/audio" element={<AudioConvert />} />
