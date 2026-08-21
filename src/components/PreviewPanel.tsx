@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { X, Download, Play, Pause } from 'lucide-react';
+import { X, Download, Play, Pause, Eye } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -102,7 +102,7 @@ export default function PreviewPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewBlob, previewFormat]);
 
-  if (!sidebarOpen || !task) return null;
+  if (!sidebarOpen) return null;
 
   async function loadContent(blob: Blob, ext: string) {
     if (ext === 'pdf') {
@@ -169,7 +169,11 @@ export default function PreviewPanel() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-4">
         {!isSource && !item ? (
-          <div className="flex items-center justify-center h-full text-[var(--text-faint)] text-xs">选择转换项以预览</div>
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
+            <Eye className="w-8 h-8 text-[var(--text-faint)] opacity-50" />
+            <p className="text-xs text-[var(--text-muted)]">暂无预览内容</p>
+            <p className="text-[10px] text-[var(--text-faint)] leading-relaxed">转换完成后，点击文件列表中结果旁的「预览」按钮即可在此查看</p>
+          </div>
         ) : !isSource && item.status === 'converting' ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div className="w-8 h-8 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />

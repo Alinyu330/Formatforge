@@ -125,16 +125,16 @@ export default function ConvertQueue() {
             onDrop={(e) => { e.preventDefault(); if (dragId && dragId !== task.id) moveTask(dragId, task.id); setDragId(null); setDragOverId(null); }}
             className={`rounded-xl bg-[var(--surface)] border overflow-hidden transition-colors ${dragOverId === task.id ? 'border-[#00d4ff]' : 'border-[var(--border)]'} ${dragId === task.id ? 'opacity-40' : ''}`}
           >
-            {/* Task header */}
-            <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
+            {/* Task header：移动端允许换行，避免图标按钮挤成一排 */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-x-3 px-3 sm:px-4 py-2.5 sm:py-3">
               <button
                 draggable
                 onDragStart={(e) => { setDragId(task.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', task.id); }}
                 onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-                className="p-1 rounded cursor-grab active:cursor-grabbing text-[var(--text-faint)] hover:text-[var(--text)] shrink-0"
+                className="hidden sm:block p-1 rounded cursor-grab active:cursor-grabbing text-[var(--text-faint)] hover:text-[var(--text)] shrink-0"
                 title="拖动调整顺序"
               >
-                <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <GripVertical className="w-4 h-4" />
               </button>
               <OrderInput index={index} total={tasks.length} onCommit={(position) => moveTaskToPosition(task.id, position)} />
               <input
@@ -152,7 +152,7 @@ export default function ConvertQueue() {
               ) : (
                 <div className="w-4 h-4 rounded-full border border-[var(--border-strong)] shrink-0" />
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-[140px]">
                 <input
                   value={task.customName ?? stripExtension(task.fileName)}
                   onChange={(e) => renameTask(task.id, e.target.value)}
@@ -164,32 +164,34 @@ export default function ConvertQueue() {
                   {formatFileSize(task.fileSize)} · {task.sourceFormat}
                 </span>
               </div>
-              <button
-                onClick={() => pinTask(task.id)}
-                className={`p-1 sm:p-1.5 rounded-lg transition-colors shrink-0 ${task.pinned ? 'text-[#f59e0b] hover:bg-[#f59e0b]/10' : 'text-[var(--text-faint)] hover:text-[#f59e0b] hover:bg-[#f59e0b]/10'}`}
-                title={task.pinned ? '已置顶，点击提到最前' : '置顶'}
-              >
-                <Pin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${task.pinned ? 'fill-current' : ''}`} />
-              </button>
-              {task.convertType === 'image' && (
-                <>
-                  <button onClick={() => rotateTask(task.id, 'ccw')} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="逆时针旋转 90°">
-                    <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-                  <button onClick={() => rotateTask(task.id, 'cw')} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="顺时针旋转 90°">
-                    <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-                  {(task.rotation ?? 0) !== 0 && (
-                    <span className="text-[9px] text-[#00d4ff] font-medium shrink-0">{task.rotation}°</span>
-                  )}
-                </>
-              )}
-              <button onClick={() => previewSourceFile(task.id)} className="p-1 sm:p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="预览源文件">
-                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button onClick={() => removeTask(task.id)} className="p-1 sm:p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--text-faint)] hover:text-red-400 transition-colors shrink-0">
-                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
+              <div className="flex items-center gap-0.5 sm:gap-1 ml-auto sm:ml-0 shrink-0">
+                <button
+                  onClick={() => pinTask(task.id)}
+                  className={`p-1.5 rounded-lg transition-colors shrink-0 ${task.pinned ? 'text-[#f59e0b] hover:bg-[#f59e0b]/10' : 'text-[var(--text-faint)] hover:text-[#f59e0b] hover:bg-[#f59e0b]/10'}`}
+                  title={task.pinned ? '已置顶，点击提到最前' : '置顶'}
+                >
+                  <Pin className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${task.pinned ? 'fill-current' : ''}`} />
+                </button>
+                {task.convertType === 'image' && (
+                  <>
+                    <button onClick={() => rotateTask(task.id, 'ccw')} className="p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="逆时针旋转 90°">
+                      <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    <button onClick={() => rotateTask(task.id, 'cw')} className="p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="顺时针旋转 90°">
+                      <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    {(task.rotation ?? 0) !== 0 && (
+                      <span className="text-[9px] text-[#00d4ff] font-medium shrink-0">{task.rotation}°</span>
+                    )}
+                  </>
+                )}
+                <button onClick={() => previewSourceFile(task.id)} className="p-1.5 rounded-lg hover:bg-[#00d4ff]/10 text-[var(--text-faint)] hover:text-[#00d4ff] transition-colors shrink-0" title="预览源文件">
+                  <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+                <button onClick={() => removeTask(task.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--text-faint)] hover:text-red-400 transition-colors shrink-0" title="移除文件">
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Per-task format selector */}

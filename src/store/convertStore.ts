@@ -166,19 +166,15 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       );
 
       const url = URL.createObjectURL(blob);
-      set((s) => {
-        const shouldPreview = !s.previewTaskId && !s.previewItemId;
-        return {
-          tasks: s.tasks.map((t) =>
-            t.id === task.id
-              ? { ...t, items: t.items.map((i) => (i.id === item.id ? { ...i, status: 'done' as TaskStatus, progress: 100, resultBlob: blob, resultUrl: url } : i)) }
-              : t
-          ),
-          previewTaskId: shouldPreview ? task.id : s.previewTaskId,
-          previewItemId: shouldPreview ? item.id : s.previewItemId,
-          sidebarOpen: true,
-        };
-      });
+      // 转换完成后不自动弹出预览面板（由用户点击预览按钮打开），
+      // 也不触碰预览状态，避免打断正在播放的预览文件
+      set((s) => ({
+        tasks: s.tasks.map((t) =>
+          t.id === task.id
+            ? { ...t, items: t.items.map((i) => (i.id === item.id ? { ...i, status: 'done' as TaskStatus, progress: 100, resultBlob: blob, resultUrl: url } : i)) }
+            : t
+        ),
+      }));
     } catch (err: any) {
       console.warn('[Convert] 转换失败:', task.fileName, '→', item.targetFormat, err);
       markItem(task.id, item.id, { status: 'error' as TaskStatus, error: err.message || '转换失败' });
@@ -420,6 +416,17 @@ export const useConvertStore = create<ConvertState>((set, get) => {
   },
 
   toggleSidebar: () => {
+    const s = get();
+    // 打开预览面板时，若从未选择过预览项，默认选中第一个已完成的结果
+    if (!s.sidebarOpen && !s.previewTaskId) {
+      for (const t of s.tasks) {
+        const doneItem = t.items.find((i) => i.status === 'done');
+        if (doneItem) {
+          set({ previewTaskId: t.id, previewItemId: doneItem.id, previewSource: false, sidebarOpen: true });
+          return;
+        }
+      }
+    }
     set((s) => ({ sidebarOpen: !s.sidebarOpen }));
   },
 
@@ -528,6 +535,7 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       );
 
       const url = URL.createObjectURL(blob);
+      // 同上：合并 PDF 完成后不自动弹出预览
       set((s) => ({
         tasks: s.tasks.map((t) =>
           t.id === taskId
@@ -541,9 +549,6 @@ export const useConvertStore = create<ConvertState>((set, get) => {
               }
             : t
         ),
-        previewTaskId: s.previewTaskId ?? taskId,
-        previewItemId: s.previewItemId ?? itemId,
-        sidebarOpen: true,
       }));
     } catch (err: any) {
       console.warn('[Convert] 合并 PDF 失败:', err);
