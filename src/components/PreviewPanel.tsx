@@ -4,12 +4,13 @@ import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 import { renderImageToCanvas } from '@/utils/image';
+import { decodeForPreview, needsPreviewDecode } from '@/utils/preview';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
 const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'alac', 'ape', 'ac3', 'eac3', 'amr', 'aiff', 'au', 'caf', 'webm'];
 const videoFormats = ['mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'webm'];
-const imageFormats = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico'];
+const imageFormats = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'svg', 'ico', 'tiff', 'tif'];
 const sheetFormats = ['xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'fods', 'csv'];
 
 export default function PreviewPanel() {
@@ -21,6 +22,8 @@ export default function PreviewPanel() {
   const [rotatedUrl, setRotatedUrl] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+  const [decodedUrl, setDecodedUrl] = useState('');
+  const [decoding, setDecoding] = useState(false);
 
   const task = tasks.find((t) => t.id === previewTaskId);
   const item = task?.items.find((i) => i.id === previewItemId);
@@ -55,6 +58,8 @@ export default function PreviewPanel() {
   const previewFormat = (isSource ? task.sourceFormat : item?.targetFormat || '').toLowerCase();
   const previewBlob: Blob | undefined = isSource ? task.sourceFile : item?.resultBlob;
   const previewUrl = isSource ? sourceUrl : item?.resultUrl || '';
+  const needsDecode = !!previewBlob && needsPreviewDecode(previewFormat);
+  const effectiveUrl = needsDecode ? decodedUrl : previewUrl;
 
   // Auto-select first completed item if none selected
   useEffect(() => {
@@ -73,6 +78,29 @@ export default function PreviewPanel() {
     loadContent(previewBlob, previewFormat);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewTaskId, previewItemId, previewSource, sidebarOpen]);
+
+  // 浏览器无法原生解码的格式（WMA / TIFF），用 FFmpeg 转码成可预览的 WAV / PNG
+  useEffect(() => {
+    let cancelled = false;
+    let url = '';
+    setDecodedUrl('');
+    setDecoding(false);
+    if (!previewBlob || !previewFormat || !needsPreviewDecode(previewFormat)) return;
+    setDecoding(true);
+    decodeForPreview(previewBlob, previewFormat)
+      .then((b) => {
+        if (cancelled) return;
+        url = URL.createObjectURL(b);
+        setDecodedUrl(url);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setDecoding(false); });
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewBlob, previewFormat]);
 
   if (!sidebarOpen || !task) return null;
 
@@ -152,6 +180,17 @@ export default function PreviewPanel() {
             <p>转换失败</p>
             <p>{item.error}</p>
           </div>
+        ) : needsDecode && !decodedUrl ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3">
+            {decoding ? (
+              <>
+                <div className="w-8 h-8 border-2 border-[#00d4ff]/30 border-t-[#00d4ff] rounded-full animate-spin" />
+                <p className="text-xs text-[var(--text-muted)]">正在解码预览...</p>
+              </>
+            ) : (
+              <p className="text-xs text-[var(--text-faint)]">无法预览此格式</p>
+            )}
+          </div>
         ) : isAudio ? (
           <div className="flex flex-col items-center gap-4 py-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
@@ -167,14 +206,14 @@ export default function PreviewPanel() {
             </div>
             <p className="text-[11px] text-[var(--text)] text-center truncate max-w-full">{task.fileName}</p>
             <span className="text-[10px] uppercase text-[#00d4ff]">{previewFormat}</span>
-            <audio ref={audioRef} src={previewUrl} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} className="hidden" />
-            <audio src={previewUrl} controls className="w-full mt-2" style={{ height: 32 }} />
+            <audio ref={audioRef} src={effectiveUrl} onEnded={() => setPlaying(false)} onPause={() => setPlaying(false)} className="hidden" />
+            <audio src={effectiveUrl} controls className="w-full mt-2" style={{ height: 32 }} />
           </div>
         ) : isVideo ? (
           <video src={previewUrl} controls className="w-full max-h-full rounded-lg" />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
-            <img src={isSource && rotatedUrl ? rotatedUrl : previewUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
+            <img src={isSource && rotatedUrl ? rotatedUrl : effectiveUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
           </div>
         ) : isPdf ? (
           <div className="space-y-4">
