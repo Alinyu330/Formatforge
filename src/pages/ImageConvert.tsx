@@ -49,7 +49,7 @@ export default function ImageConvert() {
             <button type="button" onClick={startConversion} onTouchEnd={(e) => { e.preventDefault(); startConversion(); }} disabled={pendingCount === 0}
               className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-[#f59e0b] text-[#0f1724] hover:bg-[#f59e0b]/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-[0_0_25px_rgba(245,158,11,0.2)]">
               <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" />
-              {convertingCount > 0 ? '转换中...' : `开始转换 (${pendingCount})`}
+              {convertingCount > 0 ? '转换中...' : pendingCount === 0 ? (doneCount > 0 ? '转换完成' : '请先选择目标格式') : `开始转换 (${pendingCount})`}
             </button>
             {doneCount > 0 && (
               <button onClick={downloadAllAsZip}
