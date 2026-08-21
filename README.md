@@ -2,7 +2,7 @@
 
 > **仅供个人使用，禁止商用盈利行为**
 
-**在线体验（网页端）**：🔗 https://alinyu330.github.io/Formatforge
+**在线体验（网页端）**：🔗 https://formatforge.asia （备用：https://alinyu330.github.io/Formatforge ）
 
 FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务器** 的多格式转换工具。它把音频、视频、图片、表格、办公文档的格式互转，以及 QQ 音乐 / 网易云 / 酷狗等主流平台的加密音频解密，全部搬到本地 WebAssembly 引擎中完成，兼顾速度、隐私与跨平台体验（Web / Android / iOS 均可作为 PWA 独立应用安装使用）。
 
