@@ -5,10 +5,11 @@
  * GitHub Pages 站点（alinyu330.github.io/Formatforge），使自定义域名与
  * 原 GitHub 域名均可访问同一站点，且地址栏保持自定义域名。
  *
- * 站点构建 base 为 /Formatforge/，资源均为绝对 /Formatforge/... 路径：
- *   - 根路径 "/" 重写到 "/Formatforge/"
- *   - 已含 "/Formatforge" 前缀的路径原样转发
- *   - 其余路径补全 "/Formatforge" 前缀
+ * 站点为 React Router 应用，basename 固定为 /Formatforge，且构建 base 为
+ * /Formatforge/（资源均为绝对 /Formatforge/... 路径）。因此：
+ *   - 根路径 "/" 或非 /Formatforge 路径 → 重定向到 /Formatforge/...，
+ *     使地址栏路径匹配 Router basename
+ *   - 已含 /Formatforge 前缀的路径 → 原样反向代理到上游
  *
  * 部署：wrangler deploy --config worker/site-wrangler.toml
  */
@@ -20,12 +21,12 @@ addEventListener('fetch', (event) => {
 
 async function handle(request) {
   const url = new URL(request.url);
-  let path = url.pathname;
+  const path = url.pathname;
 
-  if (path === '/') {
-    path = '/Formatforge/';
-  } else if (!path.startsWith('/Formatforge')) {
-    path = '/Formatforge' + path;
+  // 根路径或非 /Formatforge 路径先重定向到 /Formatforge/... 以匹配 Router basename
+  if (path === '/' || !path.startsWith('/Formatforge')) {
+    const target = '/Formatforge' + (path === '/' ? '/' : path) + url.search;
+    return Response.redirect(new URL(target, url.origin).href, 302);
   }
 
   const headers = new Headers(request.headers);
