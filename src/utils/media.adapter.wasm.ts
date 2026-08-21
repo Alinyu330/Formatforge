@@ -154,13 +154,13 @@ function buildAudioFormatArgs(targetFormat: string, audioOptions: { bitrate: str
 const videoCodecMap: Record<string, string> = {
   mp4: 'libx264', mkv: 'libx264', mov: 'libx264', avi: 'mpeg4',
   flv: 'flv', wmv: 'wmv2', mpeg: 'mpeg2video', mpg: 'mpeg2video',
-  m4v: 'libx264', '3gp': 'h263', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx-vp9',
+  m4v: 'libx264', '3gp': 'mpeg4', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx',
 };
 
 const videoAudioCodecMap: Record<string, string> = {
   mp4: 'aac', mkv: 'aac', mov: 'aac', avi: 'mp3', flv: 'mp3',
   wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'aac',
-  ts: 'aac', ogv: 'vorbis', webm: 'opus',
+  ts: 'aac', ogv: 'libvorbis', webm: 'libopus',
 };
 
 // ============== 加密格式检测 ==============
@@ -380,16 +380,13 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
     '-c:a', audioCodec,
   ];
 
-  // 质量映射：libx264 / VP9 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
+  // 质量映射：libx264 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
   const CRF: Record<string, string> = { high: '18', medium: '23', low: '28' };
   const BITRATE: Record<string, string> = { high: '4000k', medium: '2500k', low: '1500k' };
 
   if (videoCodec === 'libx264') {
     // preset 控制编码速度（ultrafast 最快，medium 质量最好）；CRF 控制质量
     args.push('-preset', preset, '-crf', CRF[quality]);
-  } else if (videoCodec === 'libvpx-vp9') {
-    // VP9 默认极慢，realtime + cpu-used 8 大幅提速
-    args.push('-deadline', 'realtime', '-cpu-used', '8', '-crf', CRF[quality], '-b:v', '0');
   } else {
     args.push('-b:v', BITRATE[quality]);
   }

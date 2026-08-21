@@ -33,12 +33,12 @@ const audioCodecMap: Record<string, string> = {
 const videoCodecMap: Record<string, string> = {
   mp4: 'libx264', mkv: 'libx264', mov: 'libx264', avi: 'mpeg4',
   flv: 'flv', wmv: 'wmv2', mpeg: 'mpeg2video', mpg: 'mpeg2video',
-  m4v: 'libx264', '3gp': 'h263', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx-vp9',
+  m4v: 'libx264', '3gp': 'mpeg4', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx',
 };
 
 const videoAudioCodecMap: Record<string, string> = {
   mp4: 'aac', mkv: 'aac', mov: 'aac', avi: 'libmp3lame', flv: 'libmp3lame',
-  wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'libopencore_amrnb',
+  wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'aac',
   ts: 'aac', ogv: 'libvorbis', webm: 'libopus',
 };
 

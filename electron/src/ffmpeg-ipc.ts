@@ -69,12 +69,12 @@ function buildVideoArgs(
   const videoCodecMap: Record<string, string> = {
     mp4: 'libx264', mkv: 'libx264', mov: 'libx264', avi: 'mpeg4',
     flv: 'flv', wmv: 'wmv2', mpeg: 'mpeg2video', mpg: 'mpeg2video',
-    m4v: 'libx264', '3gp': 'h263', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx-vp9',
+    m4v: 'libx264', '3gp': 'mpeg4', ts: 'libx264', ogv: 'libtheora', webm: 'libvpx',
   };
 
   const audioCodecMap: Record<string, string> = {
     mp4: 'aac', mkv: 'aac', mov: 'aac', avi: 'libmp3lame', flv: 'libmp3lame',
-    wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'libopencore_amrnb',
+    wmv: 'wmav2', mpeg: 'mp2', mpg: 'mp2', m4v: 'aac', '3gp': 'aac',
     ts: 'aac', ogv: 'libvorbis', webm: 'libopus',
   };
 
@@ -85,14 +85,12 @@ function buildVideoArgs(
 
   const args = ['-i', inputPath, '-c:v', videoCodec, '-c:a', audioCodec];
 
-  // 质量映射：libx264 / VP9 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
+  // 质量映射：libx264 用 CRF（恒定质量，速度优于固定码率），其余编码器退回固定码率
   const CRF: Record<string, string> = { high: '18', medium: '23', low: '28' };
   const BITRATE: Record<string, string> = { high: '4000k', medium: '2500k', low: '1500k' };
 
   if (videoCodec === 'libx264') {
     args.push('-preset', preset, '-crf', CRF[quality]);
-  } else if (videoCodec === 'libvpx-vp9') {
-    args.push('-deadline', 'realtime', '-cpu-used', '8', '-crf', CRF[quality], '-b:v', '0');
   } else {
     args.push('-b:v', BITRATE[quality]);
   }

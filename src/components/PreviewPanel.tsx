@@ -123,7 +123,7 @@ export default function PreviewPanel() {
   }
 
   const mime = previewBlob?.type || '';
-  const isVideo = !!previewBlob && (task.convertType === 'video' || (previewFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(previewFormat) && !audioFormats.includes(previewFormat)));
+  const isVideo = !!previewBlob && previewFormat !== 'gif' && (task.convertType === 'video' || (previewFormat === 'webm' && mime.startsWith('video/')) || (videoFormats.includes(previewFormat) && !audioFormats.includes(previewFormat)));
   const isAudio = !!previewBlob && !isVideo && (task.convertType === 'audio' || audioFormats.includes(previewFormat));
   const isImage = !!previewBlob && imageFormats.includes(previewFormat);
   const isPdf = !!previewBlob && previewFormat === 'pdf';
