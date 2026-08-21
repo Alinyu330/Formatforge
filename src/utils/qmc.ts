@@ -614,9 +614,14 @@ export async function decryptMusicexWithEkey(
 
 // ==================== GetEVkey API ====================
 
+// 开发环境走 Vite 代理；生产环境默认直连 u.y.qq.com（受 CORS 限制），
+// 配置 VITE_QQMUSIC_PROXY_URL（如 Cloudflare Worker 代理）后改走代理以规避 CORS。
 const QM_EKEY_API = import.meta.env.DEV
   ? '/api/qqmusic/cgi-bin/musicu.fcg'
-  : 'https://u.y.qq.com/cgi-bin/musicu.fcg';
+  : (import.meta.env.VITE_QQMUSIC_PROXY_URL || 'https://u.y.qq.com/cgi-bin/musicu.fcg');
+
+/** 当前 ekey 请求是否经过代理（代理需要透传 Cookie，直连则由浏览器自行携带） */
+const isUsingQmProxy = import.meta.env.DEV || !!import.meta.env.VITE_QQMUSIC_PROXY_URL;
 
 export interface QMCredentials {
   uin: string;
@@ -717,16 +722,27 @@ export async function fetchEkeyFromAPI(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (import.meta.env.DEV) {
+  // 走代理时通过自定义头透传 Cookie（浏览器禁止跨域自定义 Cookie 头）；
+  // 直连 u.y.qq.com 时浏览器会自动携带同域 Cookie，无需也不允许手动设置。
+  if (isUsingQmProxy) {
     headers['X-QQMusic-Cookie'] = normalizedCookieHeader;
   }
 
-  const resp = await fetch(QM_EKEY_API, {
-    method: 'POST',
-    headers,
-    credentials: 'include',
-    body: JSON.stringify(body),
-  });
+  let resp: Response;
+  try {
+    resp = await fetch(QM_EKEY_API, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    console.error('[diag] fetchEkeyFromAPI: fetch failed, isUsingQmProxy=', isUsingQmProxy, 'api=', QM_EKEY_API, 'err=', err);
+    if (!isUsingQmProxy) {
+      throw new Error('获取 ekey 失败：直连 QQ 音乐接口被浏览器拦截（CORS）。请配置 VITE_QQMUSIC_PROXY_URL 使用代理，或使用桌面端应用。');
+    }
+    throw new Error(`获取 ekey 失败：网络请求异常（${err instanceof Error ? err.message : String(err)}）`);
+  }
 
   if (!resp.ok) {
     throw new Error(`API 请求失败：HTTP ${resp.status}`);
