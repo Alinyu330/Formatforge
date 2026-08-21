@@ -12,3 +12,4 @@ ios/
 .DS_Store
 Thumbs.db
 .nodejs/
+.wrangler-home/

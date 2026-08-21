@@ -37,8 +37,8 @@ jobs:
         run: npm run build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}/'
-          # QQ 音乐 GetEVkey 接口的 CORS 代理（Cloudflare Worker），生产环境经它转发以规避浏览器跨域拦截
-          VITE_QQMUSIC_PROXY_URL: 'https://qqmusic-proxy.2789640289.workers.dev'
+          # QQ 音乐 GetEVkey 接口的 CORS 代理（Cloudflare Worker，自定义域名国内可达），生产环境经它转发以规避浏览器跨域拦截
+          VITE_QQMUSIC_PROXY_URL: 'https://qq.formatforge.asia'
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
