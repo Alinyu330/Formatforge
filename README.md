@@ -14,18 +14,17 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe?v=20260822)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe
+   https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe?v=20260822
    ```
 
-   备用链接（站点 / GitHub）：
+   备用链接（GitHub）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-Setup-1.2.0.exe
    https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe
    ```
 

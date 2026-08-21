@@ -45,7 +45,7 @@ async function handle(request) {
 
   // 下载文件与 404 页面禁止缓存，避免部署窗口期或版本更新后，
   // 客户端/CDN 仍命中旧缓存（如误把 APK 请求缓存的 404 页面）
-  const isDownload = path.toLowerCase().endsWith('.apk');
+  const isDownload = /\.(apk|exe|zip|dmg|ipa|msi)$/i.test(path);
   const is404 = response.status === 404;
   if (isDownload || is404) {
     const newHeaders = new Headers(response.headers);
