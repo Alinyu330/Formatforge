@@ -14,20 +14,45 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐）**：下载 [FormatForge-Setup-1.2.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe) 双击安装；首次启动为窗口化，可最大化 / 还原，内置原生 FFmpeg 引擎
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe)
+
+   可复制链接：
+
+   ```
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe
+   ```
+
+   下载后双击安装即可；首次启动为窗口化，可最大化 / 还原，内置原生 FFmpeg 引擎
 2. 或使用 **Chrome** / **Edge** 浏览器打开应用网址，点击地址栏右侧的 **安装图标** (⊕) 安装为 PWA 桌面应用
 3. 安装后可在桌面/开始菜单直接启动，完全离线运行
 
 ### Android 端
 
-1. **直接下载安装客户端（APK）**：[FormatForge-v18.apk](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-v18.apk)（手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装）
+1. **直接下载安装客户端（APK，直接下载）**：👉 [点击下载 FormatForge-v18.apk](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-v18.apk)
+
+   可复制链接：
+
+   ```
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-v18.apk
+   ```
+
+   手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
 
 ### iOS 端（iPhone / iPad）
 
-1. 用 **Safari** 浏览器打开应用网址 → 点击底部 **分享按钮** → **"添加到主屏幕"** 即可安装为 PWA
-2. 原生 App 交付：仓库已提供 Capacitor/Xcode 工程（`ios/`），需在 macOS 上用 Xcode 完成签名与归档以生成 IPA
+> 目前 **无可直接下载的 IPA 安装包**（Windows 环境无法完成 Apple 签名）。可选方式如下：
+
+1. **PWA（推荐，无需安装包）**：用 **Safari** 浏览器打开应用网址 → 点击底部 **分享按钮** → **"添加到主屏幕"** 即可像 App 一样使用
+
+   应用网址（可复制）：
+
+   ```
+   https://formatforge.asia
+   ```
+
+2. **原生 App**：仓库已提供 Capacitor/Xcode 工程（`ios/` 目录），需在 **macOS** 上用 Xcode 打开完成签名与归档，以生成 IPA 安装包
 
 ---
 
