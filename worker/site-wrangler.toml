@@ -1,0 +1,11 @@
+name = "formatforge-site"
+main = "formatforge-site.js"
+compatibility_date = "2026-08-15"
+
+[[routes]]
+pattern = "formatforge.asia"
+custom_domain = true
+
+[[routes]]
+pattern = "www.formatforge.asia"
+custom_domain = true
