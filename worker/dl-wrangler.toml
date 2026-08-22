@@ -1,11 +1,17 @@
 name = "formatforge2"
 main = "dl-worker.js"
 compatibility_date = "2026-08-20"
+workers_dev = false
+preview_urls = false
 
 [[r2_buckets]]
 binding = "BUCKET"
 bucket_name = "formatforge-2"
 
-[[routes]]
-pattern = "dl.formatforge.asia"
-custom_domain = true
+# dl.formatforge.asia 的流量路由：
+# 不使用这里的 custom_domain 绑定——该子域已有外部管理的 DNS 记录（A 记录），
+# custom_domain 绑定会报 100117 冲突错误并使整个 wrangler deploy 以失败状态结束
+# （Cloudflare 面板/邮件会提示"部署/构建失败"，尽管代码实际已生效）。
+# 实际路由由 zone 级 Workers 路由承担：
+#   dl.formatforge.asia/* -> formatforge2
+# （已通过 API 创建：POST /zones/{zone_id}/workers/routes，随 Worker 持久保留）
