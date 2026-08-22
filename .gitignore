@@ -13,3 +13,4 @@ electron/resources/ffmpeg.exe
 Thumbs.db
 .nodejs/
 .wrangler-home/
+.jdk-tmp/

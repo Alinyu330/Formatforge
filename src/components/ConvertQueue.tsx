@@ -239,13 +239,13 @@ export default function ConvertQueue() {
                     <div className="flex-1 min-w-[20px]" />
 
                     {item.status === 'done' && (
-                      <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         <span className="text-[9px] sm:text-[10px] text-[var(--text-faint)]">{formatFileSize(item.resultBlob?.size || 0)}</span>
-                        <button onClick={() => setPreviewTask(task.id, item.id)} className="p-1 rounded hover:bg-[#7c3aed]/10 text-[var(--text-muted)] hover:text-[#a855f7]" title="预览">
-                          <Eye className="w-3 h-3" />
+                        <button onClick={() => setPreviewTask(task.id, item.id)} className="flex items-center justify-center p-1.5 sm:p-1 rounded-md sm:rounded hover:bg-[#7c3aed]/10 text-[var(--text-muted)] hover:text-[#a855f7] transition-colors" title="预览">
+                          <Eye className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                         </button>
-                        <button onClick={() => downloadItem(task.id, item.id)} className="p-1 rounded hover:bg-[#00d4ff]/10 text-[var(--text-muted)] hover:text-[#00d4ff]" title="下载">
-                          <Download className="w-3 h-3" />
+                        <button onClick={() => downloadItem(task.id, item.id)} className="flex items-center justify-center p-1.5 sm:p-1 rounded-md sm:rounded hover:bg-[#00d4ff]/10 text-[var(--text-muted)] hover:text-[#00d4ff] transition-colors" title="下载">
+                          <Download className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                         </button>
                       </div>
                     )}

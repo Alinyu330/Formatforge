@@ -12,6 +12,11 @@ import { isKGMFile, decryptKGM } from './kgm';
 import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb } from './kgg';
 import { KugouNative, base64ToBytes } from './kugou-native';
 
+/** 新版 QQ 音乐加密文件缺少凭证时的报错（移动端指引去 PC 端解密） */
+function qmCredentialError(): Error {
+  return new Error('新版 QQ 音乐加密格式（MGG/MFLAC 带数字后缀等）移动端暂不支持解密：需要 QQ 音乐网页版登录 Cookie（UIN + authst 或 qqmusic_key），该凭证只能通过 PC 浏览器登录 y.qq.com 后获取。请在 PC 端打开本站解密转换后，再把文件传到手机。');
+}
+
 // Android 设备可能性能较弱，使用更长的超时时间
 const ANDROID_LOAD_TIMEOUT_MS = 120000;    // 2分钟（旧设备 WASM 编译慢）
 const ANDROID_CONVERT_TIMEOUT_MS = 900000;  // 15分钟（大视频在移动设备上极慢）
@@ -90,7 +95,7 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
       const info = parseMusicexFooter(raw);
       const cred = task.audioOptions?.qmCredentials;
       if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
-        throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+        throw qmCredentialError();
       }
       if (!info?.mediaMid || !info?.filename) {
         throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');
@@ -105,12 +110,12 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
         inputData = result.data;
         actualSourceFormat = result.ext;
       } catch (error) {
-        if (error instanceof MusicexNeedsEkeyError) {
-          const cred = task.audioOptions?.qmCredentials;
-          const info = error.info;
-          if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
-            throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
-          }
+          if (error instanceof MusicexNeedsEkeyError) {
+            const cred = task.audioOptions?.qmCredentials;
+            const info = error.info;
+            if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
+              throw qmCredentialError();
+            }
           if (!info?.mediaMid || !info?.filename) {
             throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');
           }
@@ -151,7 +156,7 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
         if (attempt.rooted) {
           throw new Error('已检测到 Root 权限，但未在酷狗客户端数据目录找到密钥库。请确认已安装并登录酷狗音乐 Android 客户端后再试，或改用电脑端导入 KGMusicV3.db 密钥。');
         }
-        throw new Error('KGG（酷狗新版加密）解密需要酷狗客户端的密钥库。当前设备未 Root，无法自动读取本机密钥库。请在电脑端已登录酷狗的酷狗客户端中「复制密钥文本」发送到手机，并粘贴到下方「手机端粘贴导入密钥」中导入（纯本地解析，不会上传）。');
+        throw new Error('KGG（酷狗新版加密）解密需要酷狗客户端的密钥库。当前设备未 Root，无法自动读取本机密钥库。请把电脑端的 KGMusicV3.db 文件发送到手机（微信/QQ/网盘），在下方「手机端导入密钥」点击「导入 KGMusicV3.db」选择该文件；或粘贴电脑端导出的密钥文本导入（纯本地解析，不会上传）。');
       }
     }
     const keyId = extractKGGKeyId(raw);

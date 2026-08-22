@@ -1,12 +1,12 @@
 {
   "name": "formatforge",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:native": "set CAPACITOR=1 && npx vite build && node -e \"const fs=require('fs'),path=require('path');(function rm(d){for(const f of fs.readdirSync(d)){const p=path.join(d,f);if(fs.statSync(p).isDirectory())rm(p);else if(f.endsWith('.map')||f.endsWith('.apk'))fs.unlinkSync(p)}})('dist');console.log('[native] stripped .map/.apk from dist')\"",
+    "build:native": "set CAPACITOR=1 && npx vite build && node -e \"const fs=require('fs'),path=require('path');(function rm(d){for(const f of fs.readdirSync(d)){const p=path.join(d,f);if(fs.statSync(p).isDirectory())rm(p);else if(f.endsWith('.map')||f.endsWith('.apk')||f.endsWith('.exe')||f.endsWith('.blockmap'))fs.unlinkSync(p)}})('dist');console.log('[native] stripped .map/.apk/.exe from dist')\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",

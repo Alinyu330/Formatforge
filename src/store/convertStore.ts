@@ -8,6 +8,7 @@ import { convertImage, convertImagesToPdf } from '@/utils/image';
 import { convertDocument } from '@/utils/document';
 import { convertPdf } from '@/utils/pdf';
 import { preloadMediaEngine } from '@/utils/media.adapter.factory';
+import { saveBlob } from '@/utils/download';
 
 // ============== 并发调度 ==============
 // 音频/视频共用同一个 FFmpeg WASM 实例，必须串行执行以避免竞态
@@ -443,14 +444,12 @@ export const useConvertStore = create<ConvertState>((set, get) => {
     const baseName = (task!.customName && task!.customName.trim()) || stripExtension(task!.fileName);
     const newName = `${baseName}.${item.targetFormat}`;
 
-    const url = URL.createObjectURL(item.resultBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = newName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // 移动端（Android 客户端 / 手机浏览器）a[download] 不可靠，
+    // 统一走 saveBlob：原生写入下载目录 / Web Share / <a download> 逐级回退
+    saveBlob(item.resultBlob, newName).catch((err) => {
+      console.warn('[Download] 保存失败:', newName, err);
+      alert(`下载「${newName}」失败：${err instanceof Error ? err.message : '未知错误'}\n请重试，或使用其他浏览器打开本站。`);
+    });
   },
 
   downloadTask: (taskId: string) => {
@@ -479,15 +478,13 @@ export const useConvertStore = create<ConvertState>((set, get) => {
       zip.file(`${baseName}.${item.targetFormat}`, item.resultBlob!);
     }
 
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(zipBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'converted-files.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      await saveBlob(zipBlob, 'converted-files.zip');
+    } catch (err) {
+      console.warn('[Download] 打包下载失败:', err);
+      alert(`打包下载失败：${err instanceof Error ? err.message : '未知错误'}\n请重试，或改为逐个下载文件。`);
+    }
   },
 
   mergeImagesToPdf: async () => {

@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import { X, Download, Play, Pause, Eye } from 'lucide-react';
+import { useRef, useState, useEffect, useMemo } from 'react';
+import { X, Download, Play, Pause, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -71,6 +71,50 @@ export default function PreviewPanel() {
       }
     }
   }, [tasks, previewTaskId, previewItemId, previewSource, sidebarOpen, setPreviewTask]);
+
+  // ===== 左右箭头切换：所有已完成的转换结果按顺序组成切换列表 =====
+  const doneList = useMemo(() => {
+    const list: { taskId: string; itemId: string }[] = [];
+    for (const t of tasks) {
+      for (const i of t.items) {
+        if (i.status === 'done') list.push({ taskId: t.id, itemId: i.id });
+      }
+    }
+    return list;
+  }, [tasks]);
+
+  const currentIndex = !isSource && previewTaskId && previewItemId
+    ? doneList.findIndex((d) => d.taskId === previewTaskId && d.itemId === previewItemId)
+    : -1;
+
+  const goPrev = () => {
+    if (currentIndex > 0) {
+      const d = doneList[currentIndex - 1];
+      setPreviewTask(d.taskId, d.itemId);
+    }
+  };
+  const goNext = () => {
+    if (currentIndex >= 0 && currentIndex < doneList.length - 1) {
+      const d = doneList[currentIndex + 1];
+      setPreviewTask(d.taskId, d.itemId);
+    }
+  };
+
+  // 键盘 ← / → 切换（输入框聚焦时不触发）
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  // 切换预览文件时重置播放状态
+  useEffect(() => { setPlaying(false); }, [previewTaskId, previewItemId, previewSource]);
 
   // 加载文本/表格/PDF 类内容
   useEffect(() => {
@@ -161,13 +205,42 @@ export default function PreviewPanel() {
       {/* Header */}
       <div className="flex items-center gap-2 px-4 h-12 border-b border-[var(--border)] shrink-0">
         <span className="text-xs font-medium text-[var(--text)] truncate flex-1">{isSource ? '预览源文件' : '预览'}</span>
+        {doneList.length > 1 && !isSource && currentIndex >= 0 && (
+          <span className="text-[10px] text-[var(--text-faint)] tabular-nums shrink-0">{currentIndex + 1} / {doneList.length}</span>
+        )}
         <button onClick={toggleSidebar} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-4">
+      {/* Content（外层固定箭头，内层滚动） */}
+      <div className="relative flex-1 min-h-0">
+        {/* 左右箭头：在所有已完成的转换结果之间切换 */}
+        {doneList.length > 1 && !isSource && (
+          <>
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={currentIndex <= 0}
+              aria-label="上一个文件"
+              title="上一个（←）"
+              className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-lg flex items-center justify-center text-[var(--text-muted)] hover:text-[#00d4ff] hover:border-[#00d4ff]/40 active:scale-95 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={currentIndex < 0 || currentIndex >= doneList.length - 1}
+              aria-label="下一个文件"
+              title="下一个（→）"
+              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-lg flex items-center justify-center text-[var(--text-muted)] hover:text-[#00d4ff] hover:border-[#00d4ff]/40 active:scale-95 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+        <div className="absolute inset-0 overflow-auto p-4">
         {!isSource && !item ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
             <Eye className="w-8 h-8 text-[var(--text-faint)] opacity-50" />
@@ -243,6 +316,7 @@ export default function PreviewPanel() {
         ) : (
           <div className="flex items-center justify-center h-full text-[var(--text-faint)] text-xs text-center">暂不支持此格式预览</div>
         )}
+        </div>
       </div>
 
       {/* Footer */}

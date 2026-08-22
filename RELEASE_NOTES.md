@@ -1,8 +1,29 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v18 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v19 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v19 — 移动端下载修复 + 预览箭头切换 + 界面细节优化
+
+### 问题修复 🐛
+- 修复移动端转换结果「单独下载」点击无响应、「打包下载全部」无法下载的问题：Android WebView 内 `<a download>` 不可靠，新增跨平台保存管线 `saveBlob`——Android 客户端经原生插件（SaveFilePlugin）写入系统 Download 目录（Android 10+ 走 MediaStore 免权限、自动 Toast 提示保存路径，Android 9 及以下自动申请存储权限）；手机浏览器优先 Web Share API 调起系统「保存到文件 / 分享」面板；桌面端保持 `<a download>` 下载
+- 修复从电脑端复制 KGMusicV3.db 到手机无法粘贴使用的问题：密钥文本框现支持**直接粘贴 / 拖拽 .db 文件**导入（自动识别剪贴板中的文件），并提供「发送 .db 文件到手机再选择导入」与「复制密钥文本到手机粘贴导入」两种移动端操作指引
+- 修复首页主题切换（背景色）按钮与页面对应元素存在偏离的问题：改为与顶部徽章同行布局（flex 居中），桌面端与移动端中心线偏差均从约 21px / 2px 修正为 **0px**，且不再受系统字体缩放影响
+- 优化转换结果行内「预览 / 下载」小按钮：移动端触控区域从 20px 增大到 26px，图标在按钮内显式 flex 居中，点击更准更稳
+
+### 新功能 🚀
+- 预览面板新增**左右箭头切换**：在所有已完成的转换结果之间快速切换（含跨任务），支持键盘 ← / → 按键，面板顶部显示「当前序号 / 总数」
+- 移动端上传新版 QQ 音乐加密格式（MGG2 / MFLAC0 / MFLAC2 / TKM 等 musicex 格式）时给出明确指引：说明所需凭证（QQ 音乐网页版登录 Cookie：UIN + authst 或 qqmusic_key）只能通过 PC 浏览器登录 y.qq.com 获取，移动端无法输入，引导在 PC 端解密转换后再把文件传到手机
+
+### 验证
+- 375px 移动视口与桌面视口下，主题切换按钮与徽章中心线偏差均为 0px
+- 打包下载 / 单独下载均统一走 saveBlob 管线（convertStore 中 downloadItem 与 downloadAllAsZip）
+- tsc -b 编译通过
+
+> Backup tag: `backup-20260822-v19`
 
 ---
 

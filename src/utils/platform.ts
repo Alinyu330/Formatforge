@@ -45,3 +45,24 @@ export function isNativePlatform(): boolean {
 export function isWebPlatform(): boolean {
   return getPlatform() === 'web';
 }
+
+let cachedMobile: boolean | null = null;
+
+/**
+ * 检查当前是否为移动端设备（Android 客户端 / 手机浏览器 / 平板浏览器）。
+ * 用于区分 PC 与移动端的交互（下载方式、凭证输入等）。
+ */
+export function isMobileDevice(): boolean {
+  if (cachedMobile !== null) return cachedMobile;
+  if (getPlatform() === 'android') {
+    cachedMobile = true;
+    return cachedMobile;
+  }
+  if (getPlatform() === 'electron') {
+    cachedMobile = false;
+    return cachedMobile;
+  }
+  cachedMobile = typeof navigator !== 'undefined'
+    && /Android|iPhone|iPad|iPod|Mobile|HarmonyOS/i.test(navigator.userAgent);
+  return cachedMobile;
+}

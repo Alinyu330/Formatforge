@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { useConvertStore } from '@/store/convertStore';
 import { KUGOU_MUSIC_ENCRYPTED_EXTENSIONS, NETEASE_MUSIC_ENCRYPTED_EXTENSIONS, isQQMusicEncryptedExt } from '@/utils/format';
 import { hasKugouKeyDb, getKugouKeyCount, importKugouKeyDb, exportKugouKeyMap, importKugouKeyMapFromText, listKugouKeyIds } from '@/utils/kgg';
-import { getPlatform } from '@/utils/platform';
+import { getPlatform, isMobileDevice } from '@/utils/platform';
 import { KugouNative, base64ToBytes } from '@/utils/kugou-native';
 
 function readCookieValue(rawCookie: string, key: string): string {
@@ -45,6 +45,7 @@ export default function AudioOptions() {
   const [kggPasteError, setKggPasteError] = useState('');
   const [kggCopied, setKggCopied] = useState(false);
   const isAndroid = getPlatform() === 'android';
+  const isMobile = isMobileDevice();
   const [rootStatus, setRootStatus] = useState<'unknown' | 'rooted' | 'noroot'>('unknown');
   const [rootReading, setRootReading] = useState(false);
 
@@ -96,6 +97,44 @@ export default function AudioOptions() {
       setKggError(err instanceof Error ? err.message : '密钥库解析失败');
     } finally {
       setImporting(false);
+    }
+  };
+
+  /** 直接导入 KGMusicV3.db 文件（粘贴 / 拖拽进文本框时触发） */
+  const handleKGGDbFile = async (file: File) => {
+    setImporting(true);
+    setKggError('');
+    setKggPasteError('');
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const count = importKugouKeyDb(bytes);
+      setKggStatus(`已加载 ${count} 个密钥`);
+      setKggText('');
+    } catch (err) {
+      setKggStatus('密钥库解析失败');
+      setKggError(`文件「${file.name}」不是有效的 KGMusicV3.db：${err instanceof Error ? err.message : '解析失败'}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  /** 粘贴事件：剪贴板里是 KGMusicV3.db 文件时直接导入，否则走默认文本粘贴 */
+  const handleKGGTextareaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const files = Array.from(e.clipboardData?.files || []);
+    const dbFile = files.find((f) => /\.db$/i.test(f.name) || /kgmusic/i.test(f.name));
+    if (dbFile) {
+      e.preventDefault();
+      void handleKGGDbFile(dbFile);
+    }
+  };
+
+  /** 拖拽 KGMusicV3.db 文件到文本框时直接导入 */
+  const handleKGGTextareaDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    const files = Array.from(e.dataTransfer?.files || []);
+    const dbFile = files.find((f) => /\.db$/i.test(f.name) || /kgmusic/i.test(f.name));
+    if (dbFile) {
+      e.preventDefault();
+      void handleKGGDbFile(dbFile);
     }
   };
 
@@ -190,7 +229,7 @@ export default function AudioOptions() {
               ) : rootStatus === 'noroot' ? (
                 <>
                   <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">未检测到 Root 权限，无法自动读取密钥库</p>
-                  <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">请在下方向「手机端粘贴导入密钥」粘贴电脑端导出的密钥文本，否则 KGG 文件无法转换。</p>
+                  <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">请在下方「手机端导入密钥」处导入电脑端发送过来的 KGMusicV3.db 文件或密钥文本，否则 KGG 文件无法转换。</p>
                 </>
               ) : (
                 <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">正在检测 Root 权限…</p>
@@ -199,16 +238,28 @@ export default function AudioOptions() {
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <input ref={fileInputRef} type="file" accept=".db" className="hidden" onChange={handleKGGImport} />
+            <input ref={fileInputRef} type="file" accept=".db,.sqlite,application/octet-stream,application/x-sqlite3" className="hidden" onChange={handleKGGImport} />
             <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all">{importing ? '解析中...' : '导入 KGMusicV3.db'}</button>
             <span className="text-[10px] sm:text-xs text-[var(--text)]">{kggStatus}</span>
           </div>
           {kggError && <p className="text-[10px] text-red-400 break-all">{kggError}</p>}
 
           <div className="border-t border-[var(--border)] pt-2 space-y-2">
-            <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">手机端粘贴导入密钥</p>
-            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)]">请先在电脑端导入 KGMusicV3.db，再复制生成的密钥文本发送到手机；不要直接把数据库文件复制到手机使用。</p>
-            <textarea value={kggText} onChange={(e) => setKggText(e.target.value)} placeholder='粘贴 FormatForge 密钥 JSON 文本' rows={4} className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-[10px] sm:text-xs text-[var(--text-strong)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[#00d4ff]/50 resize-y font-mono" />
+            <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">手机端导入密钥</p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] leading-relaxed">
+              两种方式任选其一：
+              <br />① 把电脑上的 <code className="px-1 rounded bg-[var(--surface)] font-mono text-[#00d4ff]">KGMusicV3.db</code> 文件直接发送到手机（微信 / QQ / 网盘均可），点击上方「导入 KGMusicV3.db」选择该文件；支持粘贴 / 拖拽 .db 文件到下方文本框。
+              <br />② 在电脑端导入 KGMusicV3.db 后点击「复制密钥文本」，把密钥文本发送到手机粘贴导入。
+            </p>
+            <textarea
+              value={kggText}
+              onChange={(e) => setKggText(e.target.value)}
+              onPaste={handleKGGTextareaPaste}
+              onDrop={handleKGGTextareaDrop}
+              placeholder='粘贴 FormatForge 密钥 JSON 文本，或粘贴 / 拖拽 KGMusicV3.db 文件'
+              rows={4}
+              className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-[10px] sm:text-xs text-[var(--text-strong)] placeholder:text-[var(--text-faint)] focus:outline-none focus:border-[#00d4ff]/50 resize-y font-mono"
+            />
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={handleKGGClipboardImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium bg-[#00d4ff] text-[#0f1724] hover:bg-[#00d4ff]/90 transition-all">从剪贴板读取</button>
               <button type="button" onClick={handleKGGPasteImport} className="px-3 py-2 rounded-lg text-[10px] sm:text-xs font-medium border border-[#00d4ff]/30 text-[#00d4ff] hover:bg-[#00d4ff]/10 transition-all">导入文本框内容</button>
@@ -232,6 +283,22 @@ export default function AudioOptions() {
       )}
 
       {hasQQMusicFile ? (
+        isMobile ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <p className="text-[10px] sm:text-xs text-[var(--text-strong)]">检测到 QQ 音乐加密格式（MGG / MFLAC 等）</p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] leading-relaxed">
+              移动端暂不支持解密该格式。新版 QQ 音乐加密文件需要向官方接口请求解密密钥（ekey），
+              所需访问权限为 <b className="text-[var(--text)]">QQ 音乐网页版登录 Cookie（UIN + authst 或 qqmusic_key）</b>，
+              该凭证只能通过 PC 浏览器登录 y.qq.com 后在开发者工具中查看，手机浏览器无法获取。
+            </p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] leading-relaxed">
+              解决方案（任选其一）：
+              <br />① 在 PC 端打开本站（formatforge.asia），粘贴 QQ 音乐 Cookie 完成解密转换后，把转换好的 MP3 / FLAC 等普通格式传到手机；
+              <br />② 在 PC 端 QQ 音乐客户端重新下载歌曲为普通格式。
+            </p>
+            <p className="text-[9px] sm:text-[10px] text-[var(--text-faint)]">旧版 QMC / MFLAC（不带数字后缀）等格式无需凭证，移动端可直接解密。</p>
+          </div>
+        ) : (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 space-y-2">
           <div><p className="text-[10px] sm:text-xs text-[var(--text-strong)]">检测到 QQ 音乐加密格式</p><p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] mt-1">仅 musicex 文件需要拉取 ekey 解密。可粘贴整段 QQ 音乐 Cookie；或填写 UIN 与 authst / qqmusic_key 之一，仅用于当前会话。</p></div>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -250,6 +317,7 @@ export default function AudioOptions() {
             <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="qm-login-type" checked={qmCredentials.loginType === '1'} onChange={() => setAudioOptions({ qmCredentials: { ...qmCredentials, loginType: '1' } })} />QQ 登录</label>
           </div>
         </div>
+        )
       ) : localEncryptedPlatforms.length > 0 ? (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3"><p className="text-[10px] sm:text-xs text-[var(--text-strong)]">检测到{localEncryptedPlatforms.join('、')}加密格式</p><p className="text-[9px] sm:text-[10px] text-[var(--text-muted)] mt-1">该格式将使用本地解密，不需要输入 QQ 音乐 UIN、authst 或 qqmusic_key。</p></div>
       ) : null}

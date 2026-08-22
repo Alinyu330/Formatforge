@@ -14,18 +14,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.2.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe?v=20260822)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.0.exe?v=20260822v19)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.2.0.exe?v=20260822
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.0.exe?v=20260822v19
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-Setup-1.3.0.exe
    ```
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
@@ -41,18 +41,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v18.apk](https://formatforge.asia/Formatforge/FormatForge-v18.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v19.apk](https://formatforge.asia/Formatforge/FormatForge-v19.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v18.apk
+   https://formatforge.asia/Formatforge/FormatForge-v19.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-v18.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-v19.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装
@@ -180,6 +180,16 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 
+### v19 — 移动端下载修复 + 预览箭头切换 + 界面细节优化
+- **修复**：移动端转换结果「单独下载」点击无响应、「打包下载全部」无法下载——Android 客户端经原生插件写入系统 Download 目录（Android 10+ 免权限），手机浏览器优先 Web Share 系统保存面板，桌面端保持浏览器下载
+- **修复**：从电脑端复制 KGMusicV3.db 到手机无法粘贴使用——密钥文本框支持直接粘贴 / 拖拽 .db 文件导入，并提供两种移动端导入指引
+- **修复**：首页主题切换（背景色）按钮与页面对应元素偏离——改为与顶部徽章同行居中，桌面 / 移动端中心线偏差均为 0px
+- **优化**：转换结果行内「预览 / 下载」按钮移动端触控区域增大、图标显式居中
+- **新增**：预览面板左右箭头切换已完成结果（支持键盘 ←/→，显示当前序号/总数）
+- **新增**：移动端上传 MGG2/MFLAC0 等新版 QQ 音乐加密格式时给出明确指引（所需 Cookie 凭证只能 PC 端获取，引导 PC 解密后传输）
+
+> 安装包：[FormatForge-Setup-1.3.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-Setup-1.3.0.exe)（Windows）· [FormatForge-v19.apk](https://formatforge.asia/Formatforge/FormatForge-v19.apk)（Android）
+
 ### v18 — 转换稳定性修复 + KGG 跨端密钥迁移 + 三端安装包
 - **修复**：偶现「开始转换」按钮无响应（PC / 移动端 / 客户端均受影响）——核心原因是 FFmpeg WASM 引擎失败或超时后 Worker 未真正终止，成为僵尸引擎导致后续任务卡死；现失败/超时后主动 terminate 并清理状态
 - **修复**：FFmpeg progress/log 监听器随每次转换累积，改为实例级单次监听
@@ -187,6 +197,8 @@ npm run preview
 - **修复**：KGMusicV3.db 在 PC 复制后移动端无法粘贴使用——导出增加 format/version 包装，导入容错支持 BOM、Markdown、新旧格式；剪贴板失败回退 execCommand
 - **新增**：Windows 客户端安装包（内置原生 ffmpeg.exe，默认窗口化、可最大化/还原）
 - **新增**：Android APK、iOS Capacitor/Xcode 工程交付
+
+> 安装包：[FormatForge-Setup-1.2.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v18/FormatForge-Setup-1.2.0.exe)（Windows）· [FormatForge-v18.apk](https://formatforge.asia/Formatforge/FormatForge-v18.apk)（Android）
 
 ### v17 — 移动端稳定性与 PWA 自动更新
 - **修复**：修复移动端转换按钮在部分旧缓存环境中显示无响应的问题，所有转换页面统一使用 `type="button"` 与触摸事件处理
@@ -199,6 +211,8 @@ npm run preview
 - **修复**：音频/视频格式转换失败——Electron 客户端原生 FFmpeg 桥接检测失败导致回退到 WASM 后加载超时；现优先通过 Capacitor 平台接口识别环境，并把「存在 electronFFmpeg 桥接」直接判定为 Electron 客户端，恢复原生转换
 - **新增**：手机端 KGG（酷狗新版加密）解密——新增 `KugouNative` 原生插件，自动检测 Root 权限并读取本机酷狗客户端密钥库（KGMusicV3.db）
 - **新增**：Root 设备可在音频选项中一键「自动读取密钥库」完成 KGG 等酷狗加密文件解密；未 Root 设备自动提示并引导经「手机端粘贴导入密钥」粘贴电脑端导出的密钥文本
+
+> 安装包：[FormatForge-v16.1.apk](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（Android，v16.1 为 v16 的启动修复版）
 
 ### v15 — WMA / TIFF 预览解码 + 安卓端转换按钮修复
 - **新增**：WMA 音频预览——浏览器无法原生解码 WMA，现通过 FFmpeg WASM 实时转码为 WAV 播放

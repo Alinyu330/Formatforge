@@ -13,6 +13,15 @@ import { isQMCFile, decryptQMC, decryptMusicexWithEkey, fetchEkeyFromAPI, isVali
 import { isNCMFile, decryptNCM, isValidNCMHeader } from './ncm';
 import { isKGMFile, decryptKGM, isValidKGMHeader } from './kgm';
 import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount } from './kgg';
+import { isMobileDevice } from './platform';
+
+/** 新版 QQ 音乐加密文件缺少凭证时的报错（区分移动端 / PC 端指引） */
+function qmCredentialError(): Error {
+  if (isMobileDevice()) {
+    return new Error('新版 QQ 音乐加密格式（MGG/MFLAC 带数字后缀等）移动端暂不支持解密：需要 QQ 音乐网页版登录 Cookie（UIN + authst 或 qqmusic_key），该凭证只能通过 PC 浏览器登录 y.qq.com 后获取。请在 PC 端打开本站解密转换后，再把文件传到手机。');
+  }
+  return new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+}
 
 // Cloudflare Pages 单文件上限 25MiB，而 ffmpeg-core.wasm 约 31MB，
 // 需通过环境变量 VITE_FFMPEG_WASM_URL 托管到外部（如 Cloudflare R2）；未设置时回退到打包内置的 wasm。
@@ -213,7 +222,9 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
 
     if (isKGG) {
       if (!hasKugouKeyDb()) {
-        throw new Error('KGG（酷狗新版加密）需要密钥库才能解密。请先在下方「酷狗 KGG 密钥库」导入本机酷狗客户端的 KGMusicV3.db 文件（路径：%APPDATA%\\KuGou8\\KGMusicV3.db，需已登录酷狗客户端）。');
+        throw new Error(isMobileDevice()
+          ? 'KGG（酷狗新版加密）需要密钥库才能解密。请把电脑端的 KGMusicV3.db 文件发送到手机（微信/QQ/网盘），在下方「酷狗 KGG 密钥库」点击「导入 KGMusicV3.db」选择该文件，或粘贴密钥文本导入。'
+          : 'KGG（酷狗新版加密）需要密钥库才能解密。请先在下方「酷狗 KGG 密钥库」导入本机酷狗客户端的 KGMusicV3.db 文件（路径：%APPDATA%\\KuGou8\\KGMusicV3.db，需已登录酷狗客户端）。');
       }
       const keyId = extractKGGKeyId(raw);
       const encryptionKey = getKugouKey(keyId);
@@ -240,7 +251,7 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
         const info = parseMusicexFooter(raw);
         const cred = task.audioOptions?.qmCredentials;
         if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
-          throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+          throw qmCredentialError();
         }
         if (!info?.mediaMid || !info?.filename) {
           throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');
@@ -261,7 +272,7 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
             const cred = task.audioOptions?.qmCredentials;
             const info = error.info;
             if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
-              throw new Error('该文件为新版 QQ 音乐加密格式，请填写 QQ 音乐 UIN 并提供 authst 或 qqmusic_key，或直接粘贴完整 Cookie');
+              throw qmCredentialError();
             }
             if (!info?.mediaMid || !info?.filename) {
               throw new Error('无法解析新版 QQ 音乐文件信息，暂时不能自动获取 ekey');

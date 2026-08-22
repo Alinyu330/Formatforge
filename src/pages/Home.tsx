@@ -69,16 +69,18 @@ export default function Home() {
         <AlertTriangle className="w-3.5 h-3.5 shrink-0 hidden sm:block" />
       </div>
 
-      {/* Theme toggle */}
-      <div className="fixed top-14 right-3 sm:right-5 z-[80]">
-        <ThemeToggle />
-      </div>
-
       {/* Header */}
       <header className="relative z-10 py-8 sm:py-12 px-4 sm:px-6 text-center animate-fade-in-up">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00d4ff]/20 bg-[#00d4ff]/5 text-[10px] sm:text-[11px] text-[#00d4ff]/80 mb-4 sm:mb-5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] animate-pulse" />
-          本地离线 · 隐私优先 · 无需上传
+        {/* 徽章行：徽章水平居中，主题切换按钮右侧对齐且与徽章垂直居中（随字号缩放自适应） */}
+        <div className="flex items-center gap-2 mb-4 sm:mb-5">
+          <div className="flex-1" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#00d4ff]/20 bg-[#00d4ff]/5 text-[10px] sm:text-[11px] text-[#00d4ff]/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] animate-pulse" />
+            本地离线 · 隐私优先 · 无需上传
+          </div>
+          <div className="flex-1 flex justify-end">
+            <ThemeToggle />
+          </div>
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold tracking-wider font-display">
           <span className="text-shimmer">FormatForge</span>
