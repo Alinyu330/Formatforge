@@ -97,9 +97,9 @@ export default defineConfig({
         // 会触发「Failed to fetch dynamically imported module」。
         cleanupOutdatedCaches: false,
         navigateFallback: 'index.html',
-        // /api/ 走代理；.apk/.zip/.exe 等下载文件必须绕过 SW，
+        // /api/ 走代理；.apk/.zip/.exe/.pdf 等下载文件必须绕过 SW，
         // 否则导航到下载链接会被劫持为 index.html（表现为"只显示背景和反馈邮箱"）
-        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa)$/],
+        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa|pdf)$/],
         runtimeCaching: [
           {
             // 仅缓存未被 globPatterns 预缓存的 ffmpeg wasm。
