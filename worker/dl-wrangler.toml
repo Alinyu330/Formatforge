@@ -1,0 +1,11 @@
+name = "formatforge2"
+main = "dl-worker.js"
+compatibility_date = "2026-08-20"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "formatforge-2"
+
+[[routes]]
+pattern = "dl.formatforge.asia"
+custom_domain = true

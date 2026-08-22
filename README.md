@@ -25,7 +25,7 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-Setup-1.3.0.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge.Setup.1.3.0.exe
    ```
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
@@ -188,7 +188,7 @@ npm run preview
 - **新增**：预览面板左右箭头切换已完成结果（支持键盘 ←/→，显示当前序号/总数）
 - **新增**：移动端上传 MGG2/MFLAC0 等新版 QQ 音乐加密格式时给出明确指引（所需 Cookie 凭证只能 PC 端获取，引导 PC 解密后传输）
 
-> 安装包：[FormatForge-Setup-1.3.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-Setup-1.3.0.exe)（Windows）· [FormatForge-v19.apk](https://formatforge.asia/Formatforge/FormatForge-v19.apk)（Android）
+> 安装包：[FormatForge-Setup-1.3.0.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge.Setup.1.3.0.exe)（Windows）· [FormatForge-v19.apk](https://formatforge.asia/Formatforge/FormatForge-v19.apk)（Android）
 
 ### v18 — 转换稳定性修复 + KGG 跨端密钥迁移 + 三端安装包
 - **修复**：偶现「开始转换」按钮无响应（PC / 移动端 / 客户端均受影响）——核心原因是 FFmpeg WASM 引擎失败或超时后 Worker 未真正终止，成为僵尸引擎导致后续任务卡死；现失败/超时后主动 terminate 并清理状态

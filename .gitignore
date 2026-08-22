@@ -14,3 +14,4 @@ Thumbs.db
 .nodejs/
 .wrangler-home/
 .jdk-tmp/
+worker/.wrangler/
