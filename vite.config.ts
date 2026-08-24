@@ -21,6 +21,24 @@ const stripFfmpegWasm = (): Plugin => ({
   },
 });
 
+// GitHub Pages 静态托管不重写 SPA 深链接（如 /history、/audio），
+// 直接访问或刷新会 404。输出一份 index.html 的副本作为 404.html，
+// 让 React Router 在客户端接管路径。
+const spa404Fallback = (): Plugin => ({
+  name: 'spa-404-fallback',
+  apply: 'build',
+  generateBundle(_options, bundle) {
+    const index = bundle['index.html'];
+    if (index?.type === 'asset') {
+      this.emitFile({
+        type: 'asset',
+        fileName: '404.html',
+        source: index.source,
+      });
+    }
+  },
+});
+
 export default defineConfig({
   base: BASE_PATH,
   server: {
@@ -59,6 +77,7 @@ export default defineConfig({
     }),
     tsconfigPaths({ ignoreConfigErrors: true }),
     stripFfmpegWasm(),
+    spa404Fallback(),
     // 原生 App（Capacitor）直接从本地资源加载，无需 Service Worker；
     // 且 SW 在 WebView 内可能劫持导航导致异常，故原生构建禁用 PWA
     ...(process.env.CAPACITOR ? [] : [VitePWA({
