@@ -27,6 +27,8 @@ const stripFfmpegWasm = (): Plugin => ({
 const spa404Fallback = (): Plugin => ({
   name: 'spa-404-fallback',
   apply: 'build',
+  // enforce: 'post' 保证在 Vite 内部 HTML 插件产出 index.html 之后再读取 bundle
+  enforce: 'post',
   generateBundle(_options, bundle) {
     const index = bundle['index.html'];
     if (index?.type === 'asset') {
