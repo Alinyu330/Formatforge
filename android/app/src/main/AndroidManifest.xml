@@ -40,4 +40,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android 9 及以下保存文件到公共下载目录需要；Android 10+ 走 MediaStore 无需权限 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <!-- 应用内更新：下载新版本 APK 后唤起系统安装器需要（Android 8+ 需用户授予「安装未知应用」） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

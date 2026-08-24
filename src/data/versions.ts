@@ -38,14 +38,28 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v20',
-  apkUrl: `${SITE_BASE}/FormatForge-v20.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20',
-  exeLabel: 'FormatForge-Setup-1.3.1.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260824-v20/FormatForge.Setup.1.3.1.exe`,
+  version: 'v21',
+  apkUrl: `${SITE_BASE}/FormatForge-v21.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.2.exe?v=20260825v21',
+  exeLabel: 'FormatForge-Setup-1.3.2.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v21/FormatForge-Setup-1.3.2.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v21',
+    title: '客户端应用内更新',
+    date: '2026-08-25',
+    highlights: [
+      '新增客户端应用内更新：启动自动检查 + 首页「检查更新」按钮，新版本弹窗由你决定是否更新',
+      'Windows 客户端支持一键更新：显示更新日志与下载进度，可立即重启安装或退出时自动安装（支持差量下载）',
+      'Android 客户端支持应用内更新：下载新版 APK 后唤起系统安装器，是否安装由你确认',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.2.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v21.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v20',
     title: '移动端保存稳定性 + 站点导航升级',
@@ -57,8 +71,8 @@ export const VERSIONS: VersionInfo[] = [
       '新增「使用说明」入口：一键查看完整使用说明（在线 HTML / 可下载 PDF）',
     ],
     assets: [
-      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.1.exe)', platform: 'windows' },
-      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v20.apk)', platform: 'android' },
+      { url: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20', label: 'Windows 安装包 (FormatForge-Setup-1.3.1.exe)', platform: 'windows' },
+      { url: `${SITE_BASE}/FormatForge-v20.apk`, label: 'Android 安装包 (FormatForge-v20.apk)', platform: 'android' },
     ],
   },
   {

@@ -6,6 +6,7 @@ import VideoConvert from '@/pages/VideoConvert';
 import ImageConvert from '@/pages/ImageConvert';
 import DocConvert from '@/pages/DocConvert';
 import History from '@/pages/History';
+import UpdateChecker from '@/components/UpdateChecker';
 import { useConvertStore } from '@/store/convertStore';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -37,6 +38,8 @@ export default function App() {
           <span className="text-[11px] sm:text-xs text-[var(--text)]">反馈邮箱：<a href="mailto:xiaoyuyy3@gmail.com" className="text-[#00d4ff] hover:underline">xiaoyuyy3@gmail.com</a></span>
         </div>
       </div>
+      {/* 原生客户端（Electron / Android）应用内更新检查弹窗 */}
+      <UpdateChecker />
     </Router>
   );
 }

@@ -1,7 +1,7 @@
 {
   "name": "formatforge",
   "private": true,
-  "version": "1.3.1",
+  "version": "1.3.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "cap:sync": "npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios",
-    "electron:build": "cd electron && npm run build && npx electron-builder build -c ./electron-builder.config.json -p always",
+    "electron:build": "cd electron && npm run build && npx electron-builder build -c ./electron-builder.config.json -p never",
     "electron:pack": "cd electron && npm run build && npx electron-builder build --dir -c ./electron-builder.config.json"
   },
   "dependencies": {

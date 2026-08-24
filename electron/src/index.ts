@@ -4,11 +4,11 @@ import type { MenuItemConstructorOptions } from 'electron';
 import { app, MenuItem } from 'electron';
 import electronIsDev from 'electron-is-dev';
 import unhandled from 'electron-unhandled';
-import { autoUpdater } from 'electron-updater';
 
 import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } from './setup';
 import { setupFFmpegIPC } from './ffmpeg-ipc';
 import { setupKGGIPC } from './kgg-ipc';
+import { setupUpdaterIPC } from './update-ipc';
 
 // Graceful handling of unhandled errors.
 unhandled();
@@ -51,6 +51,8 @@ if (electronIsDev) {
   setupFFmpegIPC();
   // 注册 KGG 密钥数据库 IPC 处理器
   setupKGGIPC();
+  // 注册应用内更新 IPC（检查/下载/安装由用户在界面选择）
+  setupUpdaterIPC(() => myCapacitorApp.getMainWindow() ?? null);
 })();
 
 // Handle when all of our windows are close (platforms have their own expectations).

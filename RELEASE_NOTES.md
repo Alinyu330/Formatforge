@@ -1,8 +1,33 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v20 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v21 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v21 — 客户端应用内更新
+
+### 新功能 🚀
+- **Windows 客户端应用内一键更新**：
+  - 启动后自动静默检查新版本（更新源 R2 `dl.formatforge.asia/update/`，国内直连）
+  - 发现新版本弹窗展示更新日志，**「立即更新」/「暂不更新」完全由你决定**（自动检查被拒绝后本次会话不再打扰）
+  - 选择更新后显示实时下载进度条；下载完成可**立即重启安装**，或选「稍后」退出应用时自动安装
+  - 采用 electron-updater 标准协议，支持 blockmap 差量下载（版本间体积差异小则只下载差异部分）
+- **Android 客户端应用内更新**：
+  - 同样启动自动检查 + 首页「检查更新」按钮手动触发
+  - 确认更新后原生线程下载 APK（实时进度），完成后唤起系统安装器，**是否安装由系统层面再次确认**
+  - 新增 `REQUEST_INSTALL_PACKAGES` 权限声明；下载失败自动清理残留文件
+- 首页新增「检查更新」按钮（仅原生客户端显示，Web 端 PWA 仍由 Service Worker 自动更新）
+- 更新元数据（版本号 + 更新日志）集中托管于 `update/version.json`，后续发版只需更新该文件与安装包
+
+### 技术说明
+- 更新链路：`latest.yml`（electron-updater 协议）+ `version.json`（统一元数据）+ 安装包均托管 R2，dl.formatforge.asia Worker 分发（支持 Range 断点续传、no-store 防旧缓存）
+- Windows 更新校验：SHA512 与 latest.yml 一致性已验证
+- v20 及更早版本不含更新器，**需手动安装一次 v21**；从 v21 起即可应用内更新
+
+> Backup tag: `backup-20260825-v21`
+> 安装包：[FormatForge-Setup-1.3.2.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.2.exe?v=20260825v21)（Windows）· [FormatForge-v21.apk](https://formatforge.asia/Formatforge/FormatForge-v21.apk)（Android）
 
 ---
 

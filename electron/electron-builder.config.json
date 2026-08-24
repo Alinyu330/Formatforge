@@ -1,6 +1,12 @@
 {
   "appId": "com.formatforge.app",
   "productName": "FormatForge",
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://dl.formatforge.asia/update"
+    }
+  ],
   "directories": {
     "buildResources": "resources",
     "output": "dist"

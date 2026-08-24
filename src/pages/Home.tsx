@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertTriangle, ArrowRight, History as HistoryIcon, Download, BookOpen } from 'lucide-react';
+import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertTriangle, ArrowRight, History as HistoryIcon, Download, BookOpen, RefreshCw } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { downloadLatestClient } from '@/utils/appDownload';
+import { isUpdaterSupported } from '@/utils/appUpdater';
 
 /** 使用说明在线地址（public/ 下随构建部署，新标签页打开） */
 const GUIDE_URL = `${import.meta.env.BASE_URL}使用说明.html`;
@@ -183,6 +184,20 @@ export default function Home() {
             <BookOpen className="w-3.5 h-3.5 text-[#f59e0b]" />
             使用说明
           </button>
+          {/* 原生客户端（Electron / Android）显示应用内检查更新入口 */}
+          {isUpdaterSupported() && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('ff:check-update'))}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
+                text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
+                hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
+                hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-[#10b981]" />
+              检查更新
+            </button>
+          )}
         </div>
 
         {/* Highlights */}

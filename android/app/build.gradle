@@ -7,8 +7,8 @@ android {
         applicationId "com.formatforge.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.4"
+        versionCode 6
+        versionName "1.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -20,6 +20,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // 暂无正式发布证书：使用 debug keystore 签名 release 包（AGP 自动 zipalign），
+            // 历史版本（v18–v20）同样以该签名发布，保证可覆盖安装升级
+            signingConfig signingConfigs.debug
         }
     }
 }
