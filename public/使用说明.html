@@ -131,20 +131,69 @@
     table, blockquote, pre { page-break-inside: avoid; }
     a { color: var(--text); }
     .footer-note { display: none; }
+    .back-btn { display: none; }
   }
+  .back-btn {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 999;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--accent);
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .back-btn:hover { background: var(--accent-bg); border-color: var(--accent); }
+  .back-btn:active { transform: scale(0.96); }
+  .back-btn svg { width: 15px; height: 15px; }
 </style>
 </head>
 <body>
+<button class="back-btn" type="button" onclick="goBackHome()" aria-label="返回 FormatForge 主页">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  返回
+</button>
+<script>
+function goBackHome() {
+  // 优先关闭由应用/主页新窗口打开的说明页（网页端与客户端均适用）
+  if (window.opener) {
+    window.close();
+    // 若浏览器拦截了 window.close()，稍后回退到跳转主页
+    setTimeout(redirectToHome, 250);
+    return;
+  }
+  redirectToHome();
+}
+function redirectToHome() {
+  var path = location.pathname;
+  var base = path.indexOf('/Formatforge/') === 0 ? '/Formatforge/' : '/';
+  location.href = base;
+}
+</script>
 <div class="container">
 
 <header class="doc-header">
   <h1>FormatForge 使用说明</h1>
-  <div class="subtitle">本地离线格式转换工具 · v19 · 支持音频 / 视频 / 图片 / 表格 / 文档转换与加密音乐解密</div>
+  <div class="subtitle">本地离线格式转换工具 · v21 · 支持音频 / 视频 / 图片 / 表格 / 文档转换与加密音乐解密</div>
 </header>
 
 <div class="notice">
   <strong>声明</strong>：本工具仅供个人学习与使用，<strong>禁止任何商业盈利性行为</strong>。请勿将本工具用于商业用途、付费服务、营利性分发或任何形式的牟利活动，否则后果自负。
 </div>
+
+<blockquote>
+  <p>↩️ <strong>返回</strong>：网页版和客户端内打开本说明时，点击页面<strong>左上角「返回」按钮</strong>即可回到应用主页（新窗口打开的会自动关闭）；直接在浏览器打开本页时，点击后跳转主页。</p>
+</blockquote>
 
 <h2>一、访问域名</h2>
 
@@ -418,7 +467,7 @@ https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v21/F
 </ul>
 
 <div class="footer-note">
-  <p>本说明文档随 v20 版本整理，后续功能更新请以实际界面为准。</p>
+  <p>本说明文档随 v21 版本整理，后续功能更新请以实际界面为准。</p>
   <p>📖 在线阅读：<a href="https://formatforge.asia/Formatforge/使用说明.html">https://formatforge.asia/Formatforge/使用说明.html</a> ｜ PDF 版：<a href="https://formatforge.asia/Formatforge/使用说明.pdf">使用说明.pdf</a></p>
 </div>
 
