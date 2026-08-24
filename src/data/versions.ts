@@ -42,7 +42,7 @@ export const LATEST = {
   apkUrl: `${SITE_BASE}/FormatForge-v20.apk`,
   exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20',
   exeLabel: 'FormatForge-Setup-1.3.1.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260824-v20/FormatForge-Setup-1.3.1.exe`,
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260824-v20/FormatForge.Setup.1.3.1.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
