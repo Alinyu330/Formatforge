@@ -31,7 +31,7 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
    https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v22/FormatForge-Setup-1.3.3.exe
    ```
 
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本（也可在首页点「检查更新」），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本（也可在首页点「检查更新」），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v22 起客户端使用说明改为优先加载在线版，文档更新无需重装客户端。v20 及更早版本需手动下载安装本次更新。
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
    1. 点击窗口上的 **「更多信息」**
@@ -61,7 +61,7 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v22 起客户端使用说明改为优先加载在线版，文档更新无需重装客户端。v20 及更早版本需手动下载安装本次更新。
    - **旧版本备用**：[v20](https://formatforge.asia/Formatforge/FormatForge-v20.apk) · [v19](https://formatforge.asia/Formatforge/FormatForge-v19.apk) · [v18](https://formatforge.asia/Formatforge/FormatForge-v18.apk) · [v16.1](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（也可在应用内「历史版本」页面查看全部版本并下载）
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
@@ -186,6 +186,20 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 > 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v22 — 客户端使用说明实时更新 + 返回功能
+- **新增**：客户端内「使用说明」改为优先加载在线版——内容随网页部署自动更新，今后说明文档更新无需重新安装客户端；离线时自动回退应用内置副本
+- **新增**：使用说明页左上角「← 返回」按钮——新窗口打开时点击自动关闭并回到应用，直接在浏览器打开时点击跳转应用主页
+- **修复**：客户端内使用说明内容停留在打包时版本、不随网页更新的问题
+
+> 安装包：[FormatForge-Setup-1.3.3.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22)（Windows）· [FormatForge-v22.apk](https://formatforge.asia/Formatforge/FormatForge-v22.apk)（Android）
+
+### v21 — 客户端应用内更新
+- **新增**：Windows 客户端应用内一键更新——启动自动检查新版本（更新源 R2 `dl.formatforge.asia/update/`，国内直连），弹窗展示更新日志，「立即更新」/「暂不更新」完全由你决定；下载显示实时进度，支持 blockmap 差量下载（更快更省流量）；可立即重启安装或退出时自动安装
+- **新增**：Android 客户端应用内更新——下载新版 APK 显示进度，完成后唤起系统安装器，是否安装由你确认
+- **新增**：首页「检查更新」按钮（仅原生客户端显示）
+
+> 安装包：[FormatForge-Setup-1.3.2.exe](https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v21/FormatForge-Setup-1.3.2.exe)（Windows）· [FormatForge-v21.apk](https://formatforge.asia/Formatforge/FormatForge-v21.apk)（Android）
 
 ### v20 — 移动端保存稳定性 + 站点导航升级
 - **修复**：Android 客户端保存转换结果时卡死闪退、文件无法保存的问题——旧方案把整个文件转成一个 base64 大字符串跨桥传输，内存峰值约为文件大小 3 倍以上，大文件直接把 WebView 顶到 OOM；现改为分块传输协议（512KB/块，FileReader 原生编码 + 原生端临时文件追加落盘），内存峰值恒定在 512KB
