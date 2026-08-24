@@ -1,8 +1,23 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v21 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v22 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v22 — 客户端使用说明实时更新 + 返回功能
+
+### 新功能 🚀
+- **客户端使用说明实时更新**：客户端内打开「使用说明」改为优先加载在线版，内容随网页部署自动更新，今后说明文档更新**无需重新安装客户端**
+- **使用说明返回按钮**：说明页左上角新增「← 返回」按钮——新窗口打开时点击自动关闭并回到应用；直接在浏览器打开时点击跳转应用主页
+- **离线回退**：无网络时自动回退到应用内置的说明副本，离线依然可查
+
+### 修复 🐛
+- 修复客户端内使用说明内容停留在打包时版本、不随网页更新的问题
+
+> 安装包：[FormatForge-Setup-1.3.3.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22)（Windows）· [FormatForge-v22.apk](https://formatforge.asia/Formatforge/FormatForge-v22.apk)（Android）
+> v21 客户端可直接在应用内更新到本版本；v20 及更早版本需手动下载安装。
 
 ---
 

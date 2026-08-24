@@ -3,9 +3,7 @@ import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertT
 import ThemeToggle from '@/components/ThemeToggle';
 import { downloadLatestClient } from '@/utils/appDownload';
 import { isUpdaterSupported } from '@/utils/appUpdater';
-
-/** 使用说明在线地址（public/ 下随构建部署，新标签页打开） */
-const GUIDE_URL = `${import.meta.env.BASE_URL}使用说明.html`;
+import { openGuide } from '@/utils/guide';
 
 const features = [
   {
@@ -175,7 +173,7 @@ export default function Home() {
           </button>
           <button
             type="button"
-            onClick={() => window.open(GUIDE_URL, '_blank', 'noopener')}
+            onClick={() => openGuide()}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
               text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
               hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]

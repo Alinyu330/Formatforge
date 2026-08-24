@@ -38,14 +38,28 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v21',
-  apkUrl: `${SITE_BASE}/FormatForge-v21.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.2.exe?v=20260825v21',
-  exeLabel: 'FormatForge-Setup-1.3.2.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v21/FormatForge-Setup-1.3.2.exe`,
+  version: 'v22',
+  apkUrl: `${SITE_BASE}/FormatForge-v22.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22',
+  exeLabel: 'FormatForge-Setup-1.3.3.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v22/FormatForge-Setup-1.3.3.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v22',
+    title: '客户端使用说明实时更新 + 返回功能',
+    date: '2026-08-25',
+    highlights: [
+      '客户端内打开使用说明改为优先加载在线版：内容随网页部署自动更新，无需重新安装客户端',
+      '使用说明新增左上角「返回」按钮：新窗口打开时点击自动关闭返回应用，直接打开时跳转主页',
+      '无网络时自动回退到应用内置的说明副本，离线依然可查',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.3.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v22.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v21',
     title: '客户端应用内更新',
@@ -56,8 +70,8 @@ export const VERSIONS: VersionInfo[] = [
       'Android 客户端支持应用内更新：下载新版 APK 后唤起系统安装器，是否安装由你确认',
     ],
     assets: [
-      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.2.exe)', platform: 'windows' },
-      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v21.apk)', platform: 'android' },
+      { url: `${GH_RELEASE_BASE}/backup-20260825-v21/FormatForge-Setup-1.3.2.exe`, label: 'Windows 安装包 (FormatForge-Setup-1.3.2.exe)', platform: 'windows' },
+      { url: `${SITE_BASE}/FormatForge-v21.apk`, label: 'Android 安装包 (FormatForge-v21.apk)', platform: 'android' },
     ],
   },
   {

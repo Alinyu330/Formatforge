@@ -17,18 +17,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.2.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.2.exe?v=20260825v21)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.3.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.2.exe?v=20260825v21
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v21/FormatForge-Setup-1.3.2.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v22/FormatForge-Setup-1.3.3.exe
    ```
 
    > v21 起客户端支持**应用内更新**：启动自动检查新版本（也可在首页点「检查更新」），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v20 及更早版本需手动下载安装本次更新。
@@ -46,18 +46,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v21.apk](https://formatforge.asia/Formatforge/FormatForge-v21.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v22.apk](https://formatforge.asia/Formatforge/FormatForge-v22.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v21.apk
+   https://formatforge.asia/Formatforge/FormatForge-v22.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v21/FormatForge-v21.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v22/FormatForge-v22.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
