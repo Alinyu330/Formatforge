@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertTriangle, ArrowRight, History as HistoryIcon, Download, BookOpen } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import { downloadLatestClient } from '@/utils/appDownload';
+
+/** 使用说明在线地址（public/ 下随构建部署，新标签页打开） */
+const GUIDE_URL = `${import.meta.env.BASE_URL}使用说明.html`;
 
 const features = [
   {
@@ -142,6 +146,43 @@ export default function Home() {
               />
             </button>
           ))}
+        </div>
+
+        {/* 站点导航入口：历史版本 / 下载客户端 / 使用说明 */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 w-full max-w-2xl">
+          <button
+            type="button"
+            onClick={() => navigate('/history')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
+              text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
+              hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
+              hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300"
+          >
+            <HistoryIcon className="w-3.5 h-3.5 text-[#7c3aed]" />
+            历史版本
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadLatestClient()}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#00d4ff]/30 bg-[#00d4ff]/[0.06]
+              text-[11px] sm:text-xs font-medium text-[#00d4ff]
+              hover:bg-[#00d4ff]/15 hover:border-[#00d4ff]/50 hover:-translate-y-0.5 active:scale-[0.98]
+              transition-all duration-300 shadow-[0_4px_16px_-4px_rgba(0,212,255,0.25)]"
+          >
+            <Download className="w-3.5 h-3.5" />
+            下载客户端
+          </button>
+          <button
+            type="button"
+            onClick={() => window.open(GUIDE_URL, '_blank', 'noopener')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
+              text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
+              hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
+              hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[#f59e0b]" />
+            使用说明
+          </button>
         </div>
 
         {/* Highlights */}

@@ -17,18 +17,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.0.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.0.exe?v=20260822v19)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.1.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.0.exe?v=20260822v19
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge.Setup.1.3.0.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260824-v20/FormatForge-Setup-1.3.1.exe
    ```
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
@@ -44,22 +44,22 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v19.apk](https://formatforge.asia/Formatforge/FormatForge-v19.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v20.apk](https://formatforge.asia/Formatforge/FormatForge-v20.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v19.apk
+   https://formatforge.asia/Formatforge/FormatForge-v20.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260822-v19/FormatForge-v19.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260824-v20/FormatForge-v20.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；若已装旧版请先卸载再安装
-   - **旧版本（v16.1）备用**：👉 [点击下载 FormatForge-v16.1.apk](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（链接：`https://formatforge.asia/Formatforge/FormatForge-v16.1.apk`）
+   - **旧版本备用**：[v19](https://formatforge.asia/Formatforge/FormatForge-v19.apk) · [v18](https://formatforge.asia/Formatforge/FormatForge-v18.apk) · [v16.1](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（也可在应用内「历史版本」页面查看全部版本并下载）
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
 
@@ -182,6 +182,15 @@ npm run preview
 ## 版本历史
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
+> 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v20 — 移动端保存稳定性 + 站点导航升级
+- **修复**：Android 客户端保存转换结果时卡死闪退、文件无法保存的问题——旧方案把整个文件转成一个 base64 大字符串跨桥传输，内存峰值约为文件大小 3 倍以上，大文件直接把 WebView 顶到 OOM；现改为分块传输协议（512KB/块，FileReader 原生编码 + 原生端临时文件追加落盘），内存峰值恒定在 512KB
+- **新增**：首页「历史版本」页面——查看全部历史版本更新记录，并直接下载对应版本安装包（EXE / APK）
+- **新增**：首页「下载客户端」按钮——按当前设备自动下载最新版安装包（Android → APK、PC → Windows EXE、iOS → 引导添加到主屏幕）
+- **新增**：首页「使用说明」入口——新标签页打开完整使用说明（在线 HTML，支持下载 PDF）
+
+> 安装包：[FormatForge-Setup-1.3.1.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20)（Windows）· [FormatForge-v20.apk](https://formatforge.asia/Formatforge/FormatForge-v20.apk)（Android）
 
 ### v19 — 移动端下载修复 + 预览箭头切换 + 界面细节优化
 - **修复**：移动端转换结果「单独下载」点击无响应、「打包下载全部」无法下载——Android 客户端经原生插件写入系统 Download 目录（Android 10+ 免权限），手机浏览器优先 Web Share 系统保存面板，桌面端保持浏览器下载

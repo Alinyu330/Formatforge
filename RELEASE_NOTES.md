@@ -1,8 +1,31 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v19 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v20 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v20 — 移动端保存稳定性 + 站点导航升级
+
+### 问题修复 🐛
+- 修复 Android 客户端保存转换结果时**卡死闪退、文件无法保存**的问题：
+  - 根因：旧方案把整个文件转成一个 base64 大字符串跨 JS→Java 桥传输，内存峰值约为文件大小的 3 倍以上（原始 bytes + UTF-16 拼接串 + base64 串，原生端再解码一份），大文件直接把 WebView 顶到 OOM
+  - 修复：改为**分块传输协议**——JS 端按 512KB 分块（FileReader.readAsDataURL 原生编码，无中间大字符串），原生端 `beginSave`/`appendChunk`/`finishSave` 三步写入缓存临时文件后一次性落盘到系统 Download 目录；内存峰值恒定在 512KB，与文件大小无关
+  - 健壮性：任一分块失败自动取消会话并清理临时文件；Android 9 及以下的存储权限提前到会话创建阶段申请，避免数据写完才弹权限
+
+### 新功能 🚀
+- 首页新增「**历史版本**」页面（/history）：查看 v1–v20 全部版本更新记录，可直接下载对应版本安装包（Windows EXE / Android APK），无安装包的历史版本标注说明
+- 首页新增「**下载客户端**」按钮：按当前设备自动分发最新版安装包——Android 下载 APK、PC 下载 Windows EXE、iOS 弹窗引导「Safari → 添加到主屏幕」使用 PWA
+- 首页新增「**使用说明**」入口：新标签页打开在线使用说明（HTML 版，另附可下载 PDF）
+
+### 验证
+- tsc -b 编译通过
+- 分块协议在 Android 10+（MediaStore）与 Android 9-（公共目录）双路径实现
+- 历史版本页安装包链接与实际部署资产逐一核对（v18 EXE 资产名带连字符、v19 带点号，均已按实际名称链接）
+
+> Backup tag: `backup-20260824-v20`
+> 安装包：[FormatForge-Setup-1.3.1.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.1.exe?v=20260824v20)（Windows）· [FormatForge-v20.apk](https://formatforge.asia/Formatforge/FormatForge-v20.apk)（Android）
 
 ---
 

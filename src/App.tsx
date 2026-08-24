@@ -5,6 +5,7 @@ import AudioConvert from '@/pages/AudioConvert';
 import VideoConvert from '@/pages/VideoConvert';
 import ImageConvert from '@/pages/ImageConvert';
 import DocConvert from '@/pages/DocConvert';
+import History from '@/pages/History';
 import { useConvertStore } from '@/store/convertStore';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -22,6 +23,7 @@ export default function App() {
     <Router basename={routerBasename}>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/history" element={<History />} />
         <Route path="/audio" element={<AudioConvert />} />
         <Route path="/video" element={<VideoConvert />} />
         <Route path="/office" element={<DocConvert />} />
