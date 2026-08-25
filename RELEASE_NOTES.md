@@ -1,8 +1,29 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v26 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v27 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v27 — 修复 Windows 客户端历史版本按钮 + 构建流程自动同步
+
+### 问题修复 🐛
+- **修复 Windows 客户端「历史版本」按钮仍跳转系统浏览器的问题**：
+  - 根因：v26 的 Windows 安装包（1.3.7）误打包了旧版页面资源——构建时 `electron/app` 目录未同步最新 `dist` 产物（停留在 v25 代码），源码本身无缺陷，Android 客户端（同一份代码）不受影响
+  - 本次重新打包后历史版本页面在应用内打开（顶部「返回首页」一键回主页），与 Android 客户端行为一致
+
+### 工程改进 🔧
+- **客户端构建流程自动同步**：`build:native` 构建完成后自动镜像 `dist` → `electron/app`（先清空再复制），从根源杜绝「功能已修复但安装包内仍是旧代码」的问题再次发生
+- Android 客户端同步升级至 v27（versionCode 12，功能与 v26 一致），保持三端版本对齐
+
+### 验证
+- 打包前已校验 `electron/app/assets` 主 bundle 包含 v27 版本数据（`FormatForge-v27.apk` 链接与 `/history` 站内路由），非旧版资源
+- tsc 编译与网页构建通过
+
+> Backup tag: `backup-20260825-v27`
+> 安装包：[FormatForge-Setup-1.3.8.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.8.exe?v=20260825v27)（Windows）· [FormatForge-v27.apk](https://formatforge.asia/Formatforge/FormatForge-v27.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 

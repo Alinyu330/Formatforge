@@ -38,14 +38,28 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v26',
-  apkUrl: `${SITE_BASE}/FormatForge-v26.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26',
-  exeLabel: 'FormatForge-Setup-1.3.7.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v26/FormatForge-Setup-1.3.7.exe`,
+  version: 'v27',
+  apkUrl: `${SITE_BASE}/FormatForge-v27.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.8.exe?v=20260825v27',
+  exeLabel: 'FormatForge-Setup-1.3.8.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v27/FormatForge-Setup-1.3.8.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v27',
+    title: '修复 Windows 客户端历史版本按钮 + 构建流程自动同步',
+    date: '2026-08-25',
+    highlights: [
+      '修复 Windows 客户端「历史版本」按钮仍跳转系统浏览器的问题：v26 安装包误打包了旧版页面资源，本次重新打包后历史版本页面在应用内打开（顶部「返回首页」一键回主页），与 Android 客户端行为一致',
+      '客户端构建流程改进：打包 Windows 客户端时自动同步最新页面资源，从根源杜绝「功能已修复但安装包内仍是旧代码」的问题',
+      'Android 客户端同步升级至 v27（功能与 v26 一致），保持三端版本对齐',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.8.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v27.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v26',
     title: '历史版本应用内打开 + 使用说明返回来源页',

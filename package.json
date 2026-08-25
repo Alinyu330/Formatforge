@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:native": "set CAPACITOR=1 && npx vite build && node -e \"const fs=require('fs'),path=require('path');(function rm(d){for(const f of fs.readdirSync(d)){const p=path.join(d,f);if(fs.statSync(p).isDirectory())rm(p);else if(f.endsWith('.map')||f.endsWith('.apk')||f.endsWith('.exe')||f.endsWith('.blockmap'))fs.unlinkSync(p)}})('dist');console.log('[native] stripped .map/.apk/.exe from dist')\"",
+    "build:native": "set CAPACITOR=1 && npx vite build && node -e \"const fs=require('fs'),path=require('path');(function rm(d){for(const f of fs.readdirSync(d)){const p=path.join(d,f);if(fs.statSync(p).isDirectory())rm(p);else if(f.endsWith('.map')||f.endsWith('.apk')||f.endsWith('.exe')||f.endsWith('.blockmap'))fs.unlinkSync(p)}})('dist');fs.rmSync('electron/app',{recursive:true,force:true});(function cp(s,d){fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync(s)){const a=path.join(s,f),b=path.join(d,f);if(fs.statSync(a).isDirectory()){fs.mkdirSync(b,{recursive:true});cp(a,b)}else fs.copyFileSync(a,b)}})('dist','electron/app');console.log('[native] stripped .map/.apk/.exe from dist; mirrored dist -> electron/app')\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
