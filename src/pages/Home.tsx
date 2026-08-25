@@ -83,7 +83,24 @@ export default function Home() {
             本地离线 · 隐私优先 · 无需上传
           </div>
           <div className="flex-1 flex justify-end">
-            <ThemeToggle />
+            <div className="flex items-center gap-1.5">
+              {/* 原生客户端（Electron / Android）手动检查更新入口：置于顶部右侧
+                  与主题切换并列，远离底部反馈邮箱，移动端防误触 */}
+              {isUpdaterSupported() && (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('ff:check-update'))}
+                  aria-label="检查更新"
+                  title="检查更新"
+                  className="p-1.5 rounded-lg border border-[var(--border)] text-[var(--text-muted)]
+                    hover:text-[var(--text-strong)] hover:bg-[var(--surface-hover)] hover:border-[var(--border-strong)]
+                    transition-colors cursor-pointer active:scale-[0.95]"
+                >
+                  <RefreshCw className="w-4 h-4 text-[#10b981]" />
+                </button>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
         <h1 className="text-3xl sm:text-5xl font-bold tracking-wider font-display">
@@ -174,7 +191,7 @@ export default function Home() {
           </button>
           <button
             type="button"
-            onClick={() => openGuide()}
+            onClick={() => openGuide(navigate)}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
               text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
               hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
@@ -205,19 +222,6 @@ export default function Home() {
         <p className="text-[10px] text-[var(--text-faint)]">
           所有处理在浏览器本地完成 &middot; 无需上传服务器 &middot; 保护隐私安全
         </p>
-        {/* 原生客户端（Electron / Android）手动检查更新入口：置于页脚，与上方导航按钮分离，避免误触 */}
-        {isUpdaterSupported() && (
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('ff:check-update'))}
-            className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)]
-              text-[10px] sm:text-[11px] text-[var(--text-muted)]
-              hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] active:scale-[0.98] transition-all duration-300"
-          >
-            <RefreshCw className="w-3 h-3 text-[#10b981]" />
-            检查更新
-          </button>
-        )}
       </footer>
     </div>
   );

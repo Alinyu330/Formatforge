@@ -38,14 +38,29 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v24',
-  apkUrl: `${SITE_BASE}/FormatForge-v24.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24',
-  exeLabel: 'FormatForge-Setup-1.3.5.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v24/FormatForge-Setup-1.3.5.exe`,
+  version: 'v25',
+  apkUrl: `${SITE_BASE}/FormatForge-v25.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25',
+  exeLabel: 'FormatForge-Setup-1.3.6.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v25/FormatForge-Setup-1.3.6.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v25',
+    title: '使用说明应用内打开 + 检查更新防误触 + 视频转换提速',
+    date: '2026-08-25',
+    highlights: [
+      '客户端「使用说明」改为应用内全屏打开（不再跳转系统浏览器）：优先加载在线版内容保持实时更新，离线自动回退本地副本，顶部「返回主页」一键回到客户端主页',
+      '「检查更新」按钮移至首页顶部右侧（与主题切换并列），远离底部反馈邮箱，移动端不再误触',
+      '视频转换提速：Android 客户端补齐 x264 编码速度档位（约快 3–4 倍）、WebM 编码启用实时模式（约快 5–10 倍）、缩放滤镜换用更快的算法，三端（网页 / Android / Windows）同步生效',
+      '修复网页端打开使用说明偶发黑屏：Service Worker 导航劫持已彻底放行 .html 文档',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.6.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v25.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v24',
     title: '客户端内容彻底在线化 + 检查更新入口调整',
@@ -55,8 +70,8 @@ export const VERSIONS: VersionInfo[] = [
       '「检查更新」按钮移至首页页脚，与历史版本 / 下载 / 使用说明按钮分离，避免误触',
     ],
     assets: [
-      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.5.exe)', platform: 'windows' },
-      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v24.apk)', platform: 'android' },
+      { url: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24', label: 'Windows 安装包 (FormatForge-Setup-1.3.5.exe)', platform: 'windows' },
+      { url: `${SITE_BASE}/FormatForge-v24.apk`, label: 'Android 安装包 (FormatForge-v24.apk)', platform: 'android' },
     ],
   },
   {

@@ -393,6 +393,10 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   if (videoCodec === 'libx264') {
     // preset 控制编码速度（ultrafast 最快，medium 质量最好）；CRF 控制质量
     args.push('-preset', preset, '-crf', CRF[quality]);
+  } else if (videoCodec === 'libvpx') {
+    // libvpx 默认 deadline=good 质量优先，单线程 WASM 下极慢；
+    // realtime + cpu-used 提速数倍，画质损失可接受
+    args.push('-b:v', BITRATE[quality], '-deadline', 'realtime', '-cpu-used', '5');
   } else {
     args.push('-b:v', BITRATE[quality]);
   }
@@ -400,12 +404,13 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   args.push('-b:a', task.videoOptions?.audioBitrate || '192k');
 
   // 分辨率：仅缩放到目标高度并保持宽高比（避免放大小视频导致模糊）
+  // bilinear 缩放比默认 bicubic 明显更快，画质差异肉眼基本不可辨
   const resolution = task.videoOptions?.resolution || 'original';
   if (resolution !== 'original') {
     const height = resolution === '1080p' ? 1080 : resolution === '720p' ? 720 : 480;
-    args.push('-vf', `scale=-2:${height}`);
+    args.push('-vf', `scale=-2:${height}:flags=bilinear`);
   } else if (task.videoOptions?.width && task.videoOptions?.height) {
-    args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}`);
+    args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}:flags=bilinear`);
   }
 
   if (task.targetFormat === 'gif') {

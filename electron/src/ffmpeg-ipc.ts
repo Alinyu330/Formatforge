@@ -91,6 +91,9 @@ function buildVideoArgs(
 
   if (videoCodec === 'libx264') {
     args.push('-preset', preset, '-crf', CRF[quality]);
+  } else if (videoCodec === 'libvpx') {
+    // libvpx 默认 deadline=good 极慢，realtime + cpu-used 提速数倍
+    args.push('-b:v', BITRATE[quality], '-deadline', 'realtime', '-cpu-used', '5');
   } else {
     args.push('-b:v', BITRATE[quality]);
   }
@@ -100,9 +103,9 @@ function buildVideoArgs(
   const resolution = options?.resolution || 'original';
   if (resolution !== 'original') {
     const height = resolution === '1080p' ? 1080 : resolution === '720p' ? 720 : 480;
-    args.push('-vf', `scale=-2:${height}`);
+    args.push('-vf', `scale=-2:${height}:flags=bilinear`);
   } else if (options?.width && options?.height) {
-    args.push('-vf', `scale=${options.width}:${options.height}`);
+    args.push('-vf', `scale=${options.width}:${options.height}:flags=bilinear`);
   }
 
   if (targetFormat === 'gif') {

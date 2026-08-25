@@ -134,7 +134,7 @@ export default function History() {
         <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
           <button
             type="button"
-            onClick={() => openGuide()}
+            onClick={() => openGuide(navigate)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[#00d4ff] hover:border-[#00d4ff]/40 transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />

@@ -1,8 +1,39 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v24 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v25 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v25 — 使用说明应用内打开 + 检查更新防误触 + 视频转换提速
+
+### 体验改进 🚀
+- **客户端「使用说明」改为应用内全屏打开（不再跳转系统浏览器）**：
+  - 新增 SPA `/guide` 路由全屏视图，顶部「返回主页」一键回到客户端主页
+  - 优先加载在线版文档（内容随网页部署实时更新），离线或探测失败自动回退本地打包副本，右上角标识当前来源
+  - 文档内嵌时自动隐藏自带返回按钮，由外层「返回主页」栏接管；Electron CSP 增加 `frame-src` 允许内嵌在线文档
+  - 网页端「使用说明」仍为新窗口打开站内文件，行为不变
+
+### 体验调整 ⚡
+- 「检查更新」按钮从首页页脚移至**首页顶部右侧**（与主题切换按钮并列）——此前与底部固定反馈邮箱距离过近，移动端易误触，现彻底分离
+
+### 性能优化 🏎️
+- **视频转换提速（网页 / Android / Windows 三端同步生效）**：
+  - Android 客户端补齐 x264 编码速度档位（`-preset veryfast` + CRF 质量映射，此前走 x264 默认 medium，约快 3–4 倍）
+  - WebM（libvpx）编码启用实时模式（`-deadline realtime -cpu-used 5`，此前默认 good 质量优先模式极慢，约快 5–10 倍）
+  - 分辨率缩放滤镜换用 bilinear 算法（比默认 bicubic 更快，画质差异肉眼基本不可辨）
+
+### 问题修复 🐛
+- **修复网页端打开使用说明偶发黑屏**：Service Worker NavigationRoute 会劫持带查询串的 `.html` 导航为 SPA 外壳（黑色背景无内容）；denylist 正则已改为兼容 `?v=` 查询串（workbox 对 pathname+search 整体匹配），并新增 SPA 兜底路由与 sw.js 缓存穿透，三重保险彻底修复
+
+### 验证
+- tsc 编译通过，网页版构建通过
+- 应用内使用说明视图（在线/本地回退、返回主页）、检查更新按钮新位置、三端视频转换参数均已验证
+
+> Backup tag: `backup-20260825-v25`
+> 安装包：[FormatForge-Setup-1.3.6.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25)（Windows）· [FormatForge-v25.apk](https://formatforge.asia/Formatforge/FormatForge-v25.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 

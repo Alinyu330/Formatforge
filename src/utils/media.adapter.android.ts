@@ -234,16 +234,33 @@ async function convertVideoAndroid(task: ConvertTask, onProgress: (p: number) =>
   await ff.writeFile(inputName, await fetchFile(task.sourceFile));
   onProgress(5);
 
+  // 质量映射与网页端对齐：libx264 用 preset+CRF（此前无 preset 走 x264 默认
+  // medium，在移动端 WASM 上极慢）；libvpx 用 realtime 模式提速数倍
+  const videoCodec = videoCodecMap[task.targetFormat] || 'libx264';
+  const audioCodec = videoAudioCodecMap[task.targetFormat] || 'aac';
+  const preset = task.videoOptions?.preset || 'veryfast';
+  const quality = task.videoOptions?.quality || 'medium';
+  const CRF: Record<string, string> = { high: '18', medium: '23', low: '28' };
+  const BITRATE: Record<string, string> = { high: '4000k', medium: '2500k', low: '1500k' };
+
   const args = [
     '-i', inputName,
-    '-c:v', videoCodecMap[task.targetFormat] || 'libx264',
-    '-c:a', videoAudioCodecMap[task.targetFormat] || 'aac',
-    '-b:v', task.videoOptions?.videoBitrate || '2500k',
-    '-b:a', task.videoOptions?.audioBitrate || '192k',
+    '-c:v', videoCodec,
+    '-c:a', audioCodec,
   ];
 
+  if (videoCodec === 'libx264') {
+    args.push('-preset', preset, '-crf', CRF[quality]);
+  } else if (videoCodec === 'libvpx') {
+    args.push('-b:v', BITRATE[quality], '-deadline', 'realtime', '-cpu-used', '5');
+  } else {
+    args.push('-b:v', BITRATE[quality]);
+  }
+  args.push('-b:a', task.videoOptions?.audioBitrate || '192k');
+
+  // bilinear 缩放比默认 bicubic 明显更快，移动端收益更大
   if (task.videoOptions?.width && task.videoOptions?.height) {
-    args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}`);
+    args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}:flags=bilinear`);
   }
 
   if (task.targetFormat === 'gif') {
