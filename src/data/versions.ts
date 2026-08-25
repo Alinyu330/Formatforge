@@ -38,14 +38,27 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v25',
-  apkUrl: `${SITE_BASE}/FormatForge-v25.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25',
-  exeLabel: 'FormatForge-Setup-1.3.6.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v25/FormatForge-Setup-1.3.6.exe`,
+  version: 'v26',
+  apkUrl: `${SITE_BASE}/FormatForge-v26.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26',
+  exeLabel: 'FormatForge-Setup-1.3.7.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v26/FormatForge-Setup-1.3.7.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v26',
+    title: '历史版本应用内打开 + 使用说明返回来源页',
+    date: '2026-08-25',
+    highlights: [
+      '客户端「历史版本」改为应用内打开（不再跳转系统浏览器）：站内原生页面即时加载、离线可用，顶部「返回首页」一键回到客户端主页',
+      '网页端使用说明「返回」按钮优化：点击后回到打开说明时所在的页面（如首页 / 历史版本页），不再跳转到工具主页；新窗口打开时优先关闭窗口返回原页',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.7.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v26.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v25',
     title: '使用说明应用内打开 + 检查更新防误触 + 视频转换提速',
@@ -57,8 +70,8 @@ export const VERSIONS: VersionInfo[] = [
       '修复网页端打开使用说明偶发黑屏：Service Worker 导航劫持已彻底放行 .html 文档',
     ],
     assets: [
-      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.6.exe)', platform: 'windows' },
-      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v25.apk)', platform: 'android' },
+      { url: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25', label: 'Windows 安装包 (FormatForge-Setup-1.3.6.exe)', platform: 'windows' },
+      { url: `${SITE_BASE}/FormatForge-v25.apk`, label: 'Android 安装包 (FormatForge-v25.apk)', platform: 'android' },
     ],
   },
   {

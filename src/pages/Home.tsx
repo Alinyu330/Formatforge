@@ -4,7 +4,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { downloadLatestClient } from '@/utils/appDownload';
 import { isUpdaterSupported } from '@/utils/appUpdater';
 import { openGuide, openHistory } from '@/utils/guide';
-import { isNativePlatform } from '@/utils/platform';
 
 const features = [
   {
@@ -169,7 +168,7 @@ export default function Home() {
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 w-full max-w-2xl">
           <button
             type="button"
-            onClick={() => (isNativePlatform() ? openHistory() : navigate('/history'))}
+            onClick={() => openHistory(navigate)}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
               text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
               hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]

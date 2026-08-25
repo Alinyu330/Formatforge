@@ -17,21 +17,21 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.6.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.7.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v25/FormatForge-Setup-1.3.6.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v26/FormatForge-Setup-1.3.7.exe
    ```
 
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本（「检查更新」入口位于首页顶部右侧、主题切换按钮旁），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；「历史版本」仍由系统浏览器打开在线版，内容随网页部署即时更新，无需重装客户端。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本（「检查更新」入口位于首页顶部右侧、主题切换按钮旁），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；v26 起「历史版本」页面也在应用内打开（不再跳转浏览器，可离线查看）。v20 及更早版本需手动下载安装本次更新。
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
    1. 点击窗口上的 **「更多信息」**
@@ -46,22 +46,22 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v25.apk](https://formatforge.asia/Formatforge/FormatForge-v25.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v26.apk](https://formatforge.asia/Formatforge/FormatForge-v26.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v25.apk
+   https://formatforge.asia/Formatforge/FormatForge-v26.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v25/FormatForge-v25.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v26/FormatForge-v26.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；「历史版本」仍由系统浏览器打开在线版，内容随网页部署即时更新，无需重装客户端。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；v26 起「历史版本」页面也在应用内打开（不再跳转浏览器，可离线查看）。v20 及更早版本需手动下载安装本次更新。
    - **旧版本备用**：[v20](https://formatforge.asia/Formatforge/FormatForge-v20.apk) · [v19](https://formatforge.asia/Formatforge/FormatForge-v19.apk) · [v18](https://formatforge.asia/Formatforge/FormatForge-v18.apk) · [v16.1](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（也可在应用内「历史版本」页面查看全部版本并下载）
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
@@ -186,6 +186,12 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 > 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v26 — 历史版本应用内打开 + 使用说明返回来源页
+- **改进**：客户端「历史版本」改为**应用内打开**（不再跳转系统浏览器）——站内原生页面即时加载、离线可用，顶部「返回首页」一键回到客户端主页
+- **改进**：网页端使用说明「返回」按钮回到**打开说明时所在的页面**（如首页 / 历史版本页），不再跳到工具主页；新窗口打开时优先自动关闭窗口返回原页
+
+> 安装包：[FormatForge-Setup-1.3.7.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26)（Windows）· [FormatForge-v26.apk](https://formatforge.asia/Formatforge/FormatForge-v26.apk)（Android）
 
 ### v25 — 使用说明应用内打开 + 检查更新防误触 + 视频转换提速
 - **改进**：客户端「使用说明」改为**应用内全屏打开**（不再跳转系统浏览器）——优先加载在线版内容保持实时更新，离线自动回退本地副本，顶部「返回主页」一键回到客户端主页

@@ -35,7 +35,8 @@
   },
   "win": {
     "target": ["nsis"],
-    "icon": "assets/appIcon.ico"
+    "icon": "assets/appIcon.ico",
+    "artifactName": "FormatForge-Setup-${version}.${ext}"
   },
   "mac": {
     "category": "public.app-category.utilities",

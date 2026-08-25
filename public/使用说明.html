@@ -159,7 +159,7 @@
 </style>
 </head>
 <body>
-<button class="back-btn" type="button" onclick="goBackHome()" aria-label="返回 FormatForge 主页">
+<button class="back-btn" type="button" onclick="goBackHome()" aria-label="返回上一页">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
   返回
 </button>
@@ -169,17 +169,41 @@ if (window.self !== window.top) {
   var embeddedBackBtn = document.querySelector('.back-btn');
   if (embeddedBackBtn) embeddedBackBtn.style.display = 'none';
 }
+// 来源页地址（网页端新窗口打开时由 openGuide 附带）：返回时回到点击「使用说明」
+// 按钮时所在的页面，而不是工具主页。仅接受本站地址，防止任意跳转。
+function getSourceUrl() {
+  var from = null;
+  try { from = new URLSearchParams(location.search).get('from'); } catch (e) {}
+  if (!from) return null;
+  try {
+    var u = new URL(from, location.origin);
+    if (u.origin === location.origin ||
+        u.hostname === 'formatforge.asia' ||
+        u.hostname === 'alinyu330.github.io') {
+      return u.href;
+    }
+  } catch (e) {}
+  return null;
+}
 function goBackHome() {
   // 优先关闭由应用/主页新窗口打开的说明页（网页端与客户端均适用）
   if (window.opener) {
     window.close();
-    // 若浏览器拦截了 window.close()，稍后回退到跳转主页
-    setTimeout(redirectToHome, 250);
+    // 若浏览器拦截了 window.close()，稍后回退到来源页（无来源页则回主页）
+    setTimeout(redirectToSource, 250);
     return;
   }
-  redirectToHome();
+  // 无 opener（直接打开 /noopener）：能关则关，不能关跳来源页
+  window.close();
+  setTimeout(redirectToSource, 250);
 }
-function redirectToHome() {
+function redirectToSource() {
+  var source = getSourceUrl();
+  if (source) {
+    location.href = source;
+    return;
+  }
+  // 无来源页信息：保持旧行为，跳转应用主页
   var path = location.pathname;
   var base = path.indexOf('/Formatforge/') === 0 ? '/Formatforge/' : '/';
   location.href = base;
@@ -189,7 +213,7 @@ function redirectToHome() {
 
 <header class="doc-header">
   <h1>FormatForge 使用说明</h1>
-  <div class="subtitle">本地离线格式转换工具 · v25 · 支持音频 / 视频 / 图片 / 表格 / 文档转换与加密音乐解密</div>
+  <div class="subtitle">本地离线格式转换工具 · v26 · 支持音频 / 视频 / 图片 / 表格 / 文档转换与加密音乐解密</div>
 </header>
 
 <div class="notice">
@@ -197,7 +221,7 @@ function redirectToHome() {
 </div>
 
 <blockquote>
-  <p>↩️ <strong>返回</strong>：网页版和客户端内打开本说明时，点击页面<strong>左上角「返回」按钮</strong>即可回到应用主页（新窗口打开的会自动关闭）；直接在浏览器打开本页时，点击后跳转主页。<code>v25</code> 起客户端改为<strong>应用内全屏打开</strong>本说明（优先加载在线版内容，离线自动回退本地副本），点击顶部<strong>「返回主页」</strong>即可回到客户端主页，不再跳转系统浏览器。</p>
+  <p>↩️ <strong>返回</strong>：<code>v26</code> 起网页版点击页面<strong>左上角「返回」按钮</strong>会回到<strong>打开说明时所在的页面</strong>（如首页 / 历史版本页）——新窗口打开时自动关闭窗口返回原页，直接打开时跳回来源页，不再跳到工具主页。<code>v25</code> 起客户端为<strong>应用内全屏打开</strong>本说明（优先加载在线版内容，离线自动回退本地副本），点击顶部<strong>「返回主页」</strong>即可回到客户端主页，不再跳转系统浏览器。</p>
 </blockquote>
 
 <h2>一、访问域名</h2>
@@ -241,14 +265,14 @@ function redirectToHome() {
 
 <h4>Android</h4>
 <ol>
-  <li>可<strong>直接下载安装 Android 客户端（APK）</strong>：<a href="https://formatforge.asia/Formatforge/FormatForge-v25.apk">点击下载 FormatForge-v25.apk</a>
+  <li>可<strong>直接下载安装 Android 客户端（APK）</strong>：<a href="https://formatforge.asia/Formatforge/FormatForge-v26.apk">点击下载 FormatForge-v26.apk</a>
     <pre><code>国内主链接（加载快）：
-https://formatforge.asia/Formatforge/FormatForge-v25.apk
+https://formatforge.asia/Formatforge/FormatForge-v26.apk
 
 备用链接（GitHub，国内网络可能无法访问）：
-https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v25/FormatForge-v25.apk</code></pre>
+https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v26/FormatForge-v26.apk</code></pre>
     手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
-    <blockquote><p>v21 起客户端支持应用内更新：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认</p></blockquote>
+    <blockquote><p>v21 起客户端支持应用内更新：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认；<code>v26</code> 起「历史版本」页面也在应用内打开（不再跳转浏览器），可离线查看全部版本记录</p></blockquote>
   </li>
   <li>也可用 Chrome 打开主站 → 菜单「添加到主屏幕」/「安装应用」，即可像 App 一样使用</li>
   <li>客户端转换引擎已打包在应用内，加载更快；<code>v25</code> 起视频转换速度大幅提升</li>
@@ -266,15 +290,15 @@ https://formatforge.asia</code></pre>
 <h3>3. 电脑桌面客户端（Electron）</h3>
 
 <ul>
-  <li><strong>Windows 客户端安装包（直接下载）</strong>：<a href="https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25">点击下载 FormatForge-Setup-1.3.6.exe</a>
+  <li><strong>Windows 客户端安装包（直接下载）</strong>：<a href="https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26">点击下载 FormatForge-Setup-1.3.7.exe</a>
     <pre><code>国内 CDN 加速：
-https://dl.formatforge.asia/FormatForge-Setup-1.3.6.exe?v=20260825v25
+https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26
 
 备用链接（GitHub）：
-https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v25/FormatForge-Setup-1.3.6.exe</code></pre>
+https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v26/FormatForge-Setup-1.3.7.exe</code></pre>
     <p><strong>安装时若弹出蓝色窗口「Windows 已保护你的电脑」</strong>（SmartScreen 提示）：这是 Windows 对<strong>未签名软件</strong>的标准提示，并非病毒或文件损坏。处理方式：点击 <strong>「更多信息」</strong> → <strong>「仍要运行」</strong> → 确认框选 <strong>「是」</strong> 即可正常安装。若安装后无法运行，可在开始菜单图标上右键 →「以管理员身份运行」。</p>
     <p>下载后双击安装即可。</p>
-    <blockquote><p>v21 起客户端支持应用内更新：启动自动检查新版本（<code>v25</code> 起「检查更新」入口位于首页<strong>顶部右侧</strong>、主题切换按钮旁，远离底部避免误触），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装</p></blockquote>
+    <blockquote><p>v21 起客户端支持应用内更新：启动自动检查新版本（<code>v25</code> 起「检查更新」入口位于首页<strong>顶部右侧</strong>、主题切换按钮旁，远离底部避免误触），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装；<code>v26</code> 起「历史版本」页面也在应用内打开（不再跳转浏览器）</p></blockquote>
     <blockquote><p>提示：所有链接都打不开时，可用浏览器 PWA 方式使用（功能一致）</p></blockquote>
   </li>
   <li>首次启动默认为<strong>窗口化</strong>，可<strong>最大化 / 还原</strong>，之后会记住你的窗口状态</li>
@@ -472,7 +496,7 @@ https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v25/F
 </ul>
 
 <div class="footer-note">
-  <p>本说明文档随 v25 版本整理，后续功能更新请以实际界面为准。</p>
+  <p>本说明文档随 v26 版本整理，后续功能更新请以实际界面为准。</p>
   <p>📖 在线阅读：<a href="https://formatforge.asia/Formatforge/使用说明.html">https://formatforge.asia/Formatforge/使用说明.html</a> ｜ PDF 版：<a href="https://formatforge.asia/Formatforge/使用说明.pdf">使用说明.pdf</a></p>
 </div>
 

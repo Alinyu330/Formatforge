@@ -5,8 +5,11 @@
  * 路由全屏内嵌文档，在线版优先（内容随网页部署实时更新）、离线回退本地打包
  * 副本，顶部「返回主页」回到客户端主页，不再跳转系统浏览器。
  *
- * 历史版本：客户端仍用系统默认浏览器打开在线版（保证内容实时），网页端
- * 走站内路由。
+ * 历史版本（v26 起）：客户端同样在应用内打开——直接走站内 /history 路由
+ * （原生页面，离线可用），不再跳系统浏览器。
+ *
+ * 网页端使用说明（v26 起）：新窗口打开时附带 from 参数（来源页地址），
+ * 说明页「返回」优先关闭窗口回到来源页；关闭失败则跳回来源页而非主页。
  *
  * 在线地址统一处理：
  *   1. encodeURI 对路径中的中文文件名做百分号编码，避免 Electron shell 或
@@ -14,65 +17,27 @@
  *   2. 附带版本查询参数 ?v=<LATEST.version>，每次发版自动穿透浏览器 / CDN
  *      缓存，保证历史版本与使用说明始终展示最新内容。
  */
-import { registerPlugin } from '@capacitor/core';
 import { getPlatform } from './platform';
 import { LATEST } from '@/data/versions';
 
 /** 主站地址（Cloudflare 部署，国内可达） */
 const SITE_ORIGIN = 'https://formatforge.asia/Formatforge';
 
-/** 使用说明在线地址（App 内 iframe 与系统浏览器共用） */
+/** 使用说明在线地址（App 内 iframe 优先加载，内容随网页部署实时更新） */
 export function guideOnlineUrl(): string {
   return encodeURI(`${SITE_ORIGIN}/使用说明.html?v=${LATEST.version}`);
-}
-
-/** 拼接在线页面绝对地址：encodeURI 编码中文路径 + 版本查询参数穿透缓存 */
-function onlineUrl(path: string): string {
-  return encodeURI(`${SITE_ORIGIN}${path}?v=${LATEST.version}`);
 }
 
 function isNativePlatform(): boolean {
   return getPlatform() === 'electron' || getPlatform() === 'android';
 }
 
-interface OpenExternalNativePlugin {
-  open(options: { url: string }): Promise<void>;
-}
-
-const OpenExternalNative = registerPlugin<OpenExternalNativePlugin>('OpenExternalNative');
-
-/** 获取 Electron 注入的 shell 能力（无则返回 undefined） */
-function getElectronShell(): { openExternal(url: string): Promise<{ ok: boolean }> } | undefined {
-  const w = window as unknown as { electronShell?: { openExternal(url: string): Promise<{ ok: boolean }> } };
-  return w.electronShell;
-}
-
-/**
- * 用系统默认浏览器打开 URL（Electron / Android）；失败时兜底 window.open
- */
-async function openInSystemBrowser(url: string): Promise<void> {
-  try {
-    if (getPlatform() === 'electron') {
-      const shell = getElectronShell();
-      if (shell) {
-        const result = await shell.openExternal(url);
-        if (result.ok) return;
-      }
-      window.open(url, '_blank', 'noopener');
-      return;
-    }
-    await OpenExternalNative.open({ url });
-  } catch {
-    // 系统浏览器打开失败时兜底站内打开
-    window.open(url, '_blank', 'noopener');
-  }
-}
-
 type NavigateFn = (path: string) => void;
 
 /**
  * 打开使用说明：客户端在应用内打开（SPA /guide 全屏视图，不跳浏览器），
- * 网页端新窗口打开站内文件
+ * 网页端新窗口打开站内文件，并附带 from 参数（来源页地址）——说明页
+ * 「返回」据此回到来源页（关闭新窗口或跳回来源页），不再跳到主页
  */
 export function openGuide(navigate?: NavigateFn): void {
   if (isNativePlatform()) {
@@ -84,13 +49,19 @@ export function openGuide(navigate?: NavigateFn): void {
     window.location.href = `${import.meta.env.BASE_URL}guide`;
     return;
   }
-  window.open(`${import.meta.env.BASE_URL}使用说明.html?v=${LATEST.version}`, '_blank', 'noopener');
+  const from = encodeURIComponent(window.location.href);
+  // 注意：不加 noopener —— 保留 opener 引用使说明页可 window.close() 自闭，
+  // 关闭失败时再依据 from 参数跳回来源页
+  window.open(
+    `${import.meta.env.BASE_URL}使用说明.html?v=${LATEST.version}&from=${from}`,
+    '_blank'
+  );
 }
 
-/** 打开历史版本页（客户端走在线版，网页端走站内路由） */
-export function openHistory(): void {
-  if (isNativePlatform()) {
-    void openInSystemBrowser(onlineUrl('/history'));
+/** 打开历史版本页（客户端与网页端统一站内 /history 路由，应用内原生页面） */
+export function openHistory(navigate?: NavigateFn): void {
+  if (navigate) {
+    navigate('/history');
     return;
   }
   window.location.href = `${import.meta.env.BASE_URL}history`;

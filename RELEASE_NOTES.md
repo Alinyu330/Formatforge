@@ -1,8 +1,29 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v25 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v26 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v26 — 历史版本应用内打开 + 使用说明返回来源页
+
+### 体验改进 🚀
+- **客户端「历史版本」改为应用内打开（不再跳转系统浏览器）**：
+  - 直接走站内 `/history` 原生页面，即时加载、离线可用
+  - 顶部「返回首页」一键回到客户端主页
+  - 与 v25 的「使用说明」应用内打开保持一致的交互体验
+- **网页端使用说明「返回」按钮回到来源页**：
+  - 点击返回后回到**打开说明时所在的页面**（如首页 / 历史版本页），不再跳转到工具主页
+  - 新窗口打开时优先自动关闭窗口返回原页；关闭被拦截或直接打开时跳回来源页（来源页地址经 `from` 参数传递并做同域校验）
+
+### 验证
+- tsc 编译与 ESLint 检查通过
+- 客户端历史版本应用内页面、网页端说明页返回来源页逻辑均已验证
+
+> Backup tag: `backup-20260825-v26`
+> 安装包：[FormatForge-Setup-1.3.7.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.7.exe?v=20260825v26)（Windows）· [FormatForge-v26.apk](https://formatforge.asia/Formatforge/FormatForge-v26.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 
