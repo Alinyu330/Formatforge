@@ -18,3 +18,5 @@ Thumbs.db
 *.idsig
 worker/.wrangler/
 .wrangler-cfg/
+.wrangler-tmp/
+electron/dist-v*/
