@@ -123,7 +123,10 @@ export default defineConfig({
         // .html 同理：使用说明.html 带 ?v= 版本参数后不匹配 precache 条目，
         // 会落入 NavigationRoute 被劫持为 index.html（表现为"只有黑色背景无内容"），
         // 必须放行走网络；SPA 路由（/history 等）无 .html 后缀不受影响
-        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa|pdf|html)$/],
+        // ⚠️ workbox 对 pathname+search 整体做正则匹配（见 workbox-routing
+        // NavigationRoute._match），带查询串的 URL 不以 .html 结尾，
+        // 故必须用 (\?|$) 兼容 "?v=xxx" 形式，否则 denylist 永不命中
+        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa|pdf|html)(\?|$)/],
         runtimeCaching: [
           {
             // 仅缓存未被 globPatterns 预缓存的 ffmpeg wasm。
