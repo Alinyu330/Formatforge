@@ -497,7 +497,8 @@ function readUtf16LE(buf: Uint8Array, offset: number, byteLen: number): string {
 }
 
 function normalizeFooterText(text: string): string {
-  return text.replace(/\u0000/g, '').trim();
+  // eslint-disable-next-line no-control-regex -- 显式剔除 footer 文本中的 NUL 填充
+  return text.replace(/[\u0000]/g, '').trim();
 }
 
 function looksLikeMediaMid(value: string): boolean {
@@ -614,14 +615,33 @@ export async function decryptMusicexWithEkey(
 
 // ==================== GetEVkey API ====================
 
-// 开发环境走 Vite 代理；生产环境默认直连 u.y.qq.com（受 CORS 限制），
-// 配置 VITE_QQMUSIC_PROXY_URL（如 Cloudflare Worker 代理）后改走代理以规避 CORS。
-const QM_EKEY_API = import.meta.env.DEV
-  ? '/api/qqmusic/cgi-bin/musicu.fcg'
-  : (import.meta.env.VITE_QQMUSIC_PROXY_URL || 'https://u.y.qq.com/cgi-bin/musicu.fcg');
+// 开发环境走 Vite 代理；生产 Web 部署通过 VITE_QQMUSIC_PROXY_URL（Cloudflare Worker 代理）规避 CORS。
+// PC/Android 客户端（本地构建，未注入该环境变量）直连 u.y.qq.com 同样会被 WebView 拦截，
+// 因此原生平台默认走官方部署的代理 qq.formatforge.asia。
+import { getPlatform } from './platform';
+
+const QM_EKEY_PROXY_FALLBACK = 'https://qq.formatforge.asia/cgi-bin/musicu.fcg';
+
+function resolveQmEkeyApi(): { api: string; usingProxy: boolean } {
+  if (import.meta.env.DEV) {
+    return { api: '/api/qqmusic/cgi-bin/musicu.fcg', usingProxy: true };
+  }
+  if (import.meta.env.VITE_QQMUSIC_PROXY_URL) {
+    return { api: import.meta.env.VITE_QQMUSIC_PROXY_URL, usingProxy: true };
+  }
+  const platform = getPlatform();
+  if (platform === 'electron' || platform === 'android') {
+    // 原生客户端直连必然被 CORS 拦截，默认走代理
+    return { api: QM_EKEY_PROXY_FALLBACK, usingProxy: true };
+  }
+  return { api: 'https://u.y.qq.com/cgi-bin/musicu.fcg', usingProxy: false };
+}
+
+const QM_EKEY_API_RESOLVED = resolveQmEkeyApi();
+const QM_EKEY_API = QM_EKEY_API_RESOLVED.api;
 
 /** 当前 ekey 请求是否经过代理（代理需要透传 Cookie，直连则由浏览器自行携带） */
-const isUsingQmProxy = import.meta.env.DEV || !!import.meta.env.VITE_QQMUSIC_PROXY_URL;
+const isUsingQmProxy = QM_EKEY_API_RESOLVED.usingProxy;
 
 export interface QMCredentials {
   uin: string;

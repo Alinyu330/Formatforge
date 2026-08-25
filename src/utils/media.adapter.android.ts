@@ -5,7 +5,7 @@
  */
 import type { MediaAdapter } from './media.adapter';
 import type { ConvertTask } from '@/types';
-import { getFFmpeg, buildAudioFormatArgs } from './media.adapter.wasm';
+import { getFFmpeg, buildAudioFormatArgs, mountInputFile, unmountInputFile } from './media.adapter.wasm';
 import { isQMCFile, decryptQMC, isMusicexFormat, parseMusicexFooter, decryptMusicexWithEkey, fetchEkeyFromAPI, MusicexNeedsEkeyError } from './qmc';
 import { isNCMFile, decryptNCM } from './ncm';
 import { isKGMFile, decryptKGM } from './kgm';
@@ -84,7 +84,7 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     '音频转换引擎加载超时（Android 设备性能有限），请关闭后台应用后重试',
   );
 
-  let inputData: Uint8Array;
+  let inputData: Uint8Array = new Uint8Array(0);
   let actualSourceFormat = task.sourceFormat;
 
   if (isQMCFile(task.fileName)) {
@@ -170,8 +170,8 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     actualSourceFormat = result.ext;
     onProgress(30);
   } else {
+    // 非加密源不读入内存，下方统一走 WORKERFS 挂载（大文件防 OOM）
     onProgress(5);
-    inputData = new Uint8Array(await task.sourceFile.arrayBuffer());
     onProgress(15);
   }
 
@@ -181,9 +181,18 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
     }
   }
 
-  const inputName = `ina-${Date.now()}.${actualSourceFormat}`;
+  // 大音频防 OOM：非加密源优先 WORKERFS 零拷贝挂载，加密源（已解密到内存）走 writeFile
+  const wasEncrypted = isQMCFile(task.fileName) || isNCMFile(task.fileName) || isKGMFile(task.fileName) || isKGGFile(task.fileName);
+  let inputName: string;
+  let mountDir: string | null = null;
+  if (wasEncrypted) {
+    inputName = `ina-${Date.now()}.${actualSourceFormat}`;
+  } else {
+    const mounted = await mountInputFile(ff, task.sourceFile, actualSourceFormat);
+    inputName = mounted.inputName;
+    mountDir = mounted.mountDir;
+  }
   const outputName = `outa-${Date.now()}.${task.targetFormat}`;
-  await ff.writeFile(inputName, inputData);
 
   const args: string[] = ['-i', inputName, '-vn'];
   if (task.audioOptions) {
@@ -192,28 +201,34 @@ async function convertAudioAndroid(task: ConvertTask, onProgress: (p: number) =>
   args.push('-y', outputName);
 
   ff.on('progress', ({ progress }) => {
-    const base = isQMCFile(task.fileName) || isNCMFile(task.fileName) || isKGMFile(task.fileName) || isKGGFile(task.fileName) ? 30 : 15;
+    const base = wasEncrypted ? 30 : 15;
     onProgress(Math.round(base + progress * (100 - base)));
   });
 
-  await withTimeout(
-    ff.exec(args),
-    ANDROID_CONVERT_TIMEOUT_MS,
-    `音频"${task.fileName}"转换超时，请尝试降低比特率`,
-  );
+  try {
+    if (wasEncrypted) {
+      await ff.writeFile(inputName, inputData);
+    }
+    await withTimeout(
+      ff.exec(args),
+      ANDROID_CONVERT_TIMEOUT_MS,
+      `音频"${task.fileName}"转换超时，请尝试降低比特率`,
+    );
 
-  const data = await ff.readFile(outputName);
-  const mimeMap: Record<string, string> = {
-    mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
-    aac: 'audio/aac', ogg: 'audio/ogg', m4a: 'audio/mp4',
-    wma: 'audio/x-ms-wma', opus: 'audio/opus', webm: 'audio/webm',
-  };
-  const blob = new Blob([data], { type: mimeMap[task.targetFormat] ?? 'audio/mpeg' });
+    const data = await ff.readFile(outputName);
+    const mimeMap: Record<string, string> = {
+      mp3: 'audio/mpeg', flac: 'audio/flac', wav: 'audio/wav',
+      aac: 'audio/aac', ogg: 'audio/ogg', m4a: 'audio/mp4',
+      wma: 'audio/x-ms-wma', opus: 'audio/opus', webm: 'audio/webm',
+    };
+    const blob = new Blob([data], { type: mimeMap[task.targetFormat] ?? 'audio/mpeg' });
 
-  try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
-  try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
-  onProgress(100);
-  return blob;
+    onProgress(100);
+    return blob;
+  } finally {
+    await unmountInputFile(ff, mountDir, inputName);
+    try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
+  }
 }
 
 // ============== 视频转换 ==============
@@ -227,12 +242,12 @@ async function convertVideoAndroid(task: ConvertTask, onProgress: (p: number) =>
     '视频转换引擎加载超时（Android 设备性能有限），请关闭后台应用后重试',
   );
 
-  const inputName = `vin-${Date.now()}.${task.sourceFormat}`;
   const outputName = `vout-${Date.now()}.${task.targetFormat}`;
 
   onProgress(2);
-  await ff.writeFile(inputName, await fetchFile(task.sourceFile));
-  onProgress(5);
+
+  // 大文件防 OOM：优先 WORKERFS 流式挂载（零拷贝），失败回退整文件写入
+  const { inputName, mountDir } = await mountInputFile(ff, task.sourceFile, task.sourceFormat);
 
   // 质量映射与网页端对齐：libx264 用 preset+CRF（此前无 preset 走 x264 默认
   // medium，在移动端 WASM 上极慢）；libvpx 用 realtime 模式提速数倍
@@ -258,8 +273,13 @@ async function convertVideoAndroid(task: ConvertTask, onProgress: (p: number) =>
   }
   args.push('-b:a', task.videoOptions?.audioBitrate || '192k');
 
+  // 分辨率：仅缩放到目标高度并保持宽高比（与网页端一致，避免放大小视频）
   // bilinear 缩放比默认 bicubic 明显更快，移动端收益更大
-  if (task.videoOptions?.width && task.videoOptions?.height) {
+  const resolution = task.videoOptions?.resolution || 'original';
+  if (resolution !== 'original') {
+    const height = resolution === '1080p' ? 1080 : resolution === '720p' ? 720 : 480;
+    args.push('-vf', `scale=-2:${height}:flags=bilinear`);
+  } else if (task.videoOptions?.width && task.videoOptions?.height) {
     args.push('-vf', `scale=${task.videoOptions.width}:${task.videoOptions.height}:flags=bilinear`);
   }
 
@@ -274,26 +294,33 @@ async function convertVideoAndroid(task: ConvertTask, onProgress: (p: number) =>
     onProgress(Math.round(5 + progress * 94));
   });
 
-  await withTimeout(
-    ff.exec(args),
-    ANDROID_CONVERT_TIMEOUT_MS,
-    `视频"${task.fileName}"转换超时，请尝试降低分辨率或比特率`,
-  );
+  try {
+    if (!mountDir) {
+      // 回退路径：WORKERFS 不可用时整文件写入
+      await ff.writeFile(inputName, await fetchFile(task.sourceFile));
+    }
+    onProgress(5);
+    await withTimeout(
+      ff.exec(args),
+      ANDROID_CONVERT_TIMEOUT_MS,
+      `视频"${task.fileName}"转换超时，请尝试降低分辨率或比特率`,
+    );
 
-  const data = await ff.readFile(outputName);
-  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+    const data = await ff.readFile(outputName);
+    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
 
-  try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
-  try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
-
-  onProgress(100);
-  const mimeMap: Record<string, string> = {
-    mp4: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm', mov: 'video/quicktime',
-    avi: 'video/x-msvideo', flv: 'video/x-flv', wmv: 'video/x-ms-wmv', mpeg: 'video/mpeg',
-    mpg: 'video/mpeg', m4v: 'video/x-m4v', '3gp': 'video/3gpp', ts: 'video/mp2t',
-    ogv: 'video/ogg', gif: 'image/gif',
-  };
-  return new Blob([bytes], { type: mimeMap[task.targetFormat] ?? 'application/octet-stream' });
+    onProgress(100);
+    const mimeMap: Record<string, string> = {
+      mp4: 'video/mp4', mkv: 'video/x-matroska', webm: 'video/webm', mov: 'video/quicktime',
+      avi: 'video/x-msvideo', flv: 'video/x-flv', wmv: 'video/x-ms-wmv', mpeg: 'video/mpeg',
+      mpg: 'video/mpeg', m4v: 'video/x-m4v', '3gp': 'video/3gpp', ts: 'video/mp2t',
+      ogv: 'video/ogg', gif: 'image/gif',
+    };
+    return new Blob([bytes], { type: mimeMap[task.targetFormat] ?? 'application/octet-stream' });
+  } finally {
+    await unmountInputFile(ff, mountDir, inputName);
+    try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
+  }
 }
 
 export const androidMediaAdapter: MediaAdapter = {

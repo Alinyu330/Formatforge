@@ -2,11 +2,9 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { X, Download, Play, Pause, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConvertStore } from '@/store/convertStore';
 import * as XLSX from 'xlsx';
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjsLib } from '@/utils/pdfjs';
 import { renderImageToCanvas } from '@/utils/image';
 import { decodeForPreview, needsPreviewDecode } from '@/utils/preview';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
 const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'ogg', 'm4a', 'wma', 'opus', 'alac', 'ape', 'ac3', 'eac3', 'amr', 'aiff', 'au', 'caf', 'webm'];
 const videoFormats = ['mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'mpeg', 'mpg', 'm4v', '3gp', 'ts', 'ogv', 'webm'];
@@ -143,7 +141,6 @@ export default function PreviewPanel() {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewBlob, previewFormat]);
 
   if (!sidebarOpen) return null;
@@ -168,7 +165,7 @@ export default function PreviewPanel() {
           urls.push(canvas.toDataURL('image/png'));
         }
         setPdfPages(urls);
-      } catch { setPdfPages([]); }
+      } catch (err) { console.error('[PreviewPanel] PDF render failed:', err); setPdfPages([]); }
       setLoading(false);
     } else if (sheetFormats.includes(ext)) {
       setLoading(true);
@@ -275,7 +272,7 @@ export default function PreviewPanel() {
             }`}>
               <button onClick={() => {
                 const a = audioRef.current; if (!a) return;
-                playing ? a.pause() : a.play();
+                if (playing) { a.pause(); } else { void a.play(); }
                 setPlaying(!playing);
               }}>
                 {playing ? <Pause className="w-7 h-7 text-[#00d4ff]" /> : <Play className="w-7 h-7 text-[#00d4ff] ml-0.5" />}
@@ -287,7 +284,7 @@ export default function PreviewPanel() {
             <audio src={effectiveUrl} controls className="w-full mt-2" style={{ height: 32 }} />
           </div>
         ) : isVideo ? (
-          <video src={previewUrl} controls className="w-full max-h-full rounded-lg" />
+          <video src={effectiveUrl} controls className="w-full max-h-full rounded-lg" />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">
             <img src={isSource && rotatedUrl ? rotatedUrl : effectiveUrl} alt={task.fileName} className="max-w-full max-h-full object-contain rounded-lg" />

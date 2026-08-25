@@ -22,6 +22,9 @@ function getFFmpegPath(): string {
 
 // ============== 参数构建 ==============
 
+// opus 编码器（原生 opus / libopus）仅支持的采样率；其余采样率会导致转换失败
+const OPUS_SAMPLE_RATES = [48000, 24000, 16000, 12000, 8000];
+
 function buildAudioArgs(
   inputPath: string,
   outputPath: string,
@@ -30,18 +33,28 @@ function buildAudioArgs(
 ): string[] {
   const args = ['-i', inputPath, '-vn'];
 
+  // 统一使用 FFmpeg 原生 opus 编码器（与 WASM 端一致，任何构建都内置）
   const codecMap: Record<string, string> = {
     mp3: 'libmp3lame', flac: 'flac', aac: 'aac', m4a: 'aac',
-    ogg: 'libvorbis', opus: 'libopus', wma: 'wmav2', ape: 'ape', ac3: 'ac3', eac3: 'eac3',
+    ogg: 'libvorbis', opus: 'opus', webm: 'opus', wma: 'wmav2', ape: 'ape', ac3: 'ac3', eac3: 'eac3',
     amr: 'libopencore_amrnb',
   };
 
   const codec = codecMap[targetFormat];
   if (codec) args.push('-codec:a', codec);
 
-  if (targetFormat === 'flac') {
+  if (targetFormat === 'opus' || targetFormat === 'webm') {
+    // opus 编码器不支持 -q:a 质量模式，必须用比特率；
+    // 采样率必须是 opus 支持的值（默认 48000，44100 等会导致 "Specified sample rate is not supported"）
+    if (codec) args.push('-strict', '-2');
+    const rate = options?.sampleRate && OPUS_SAMPLE_RATES.includes(options.sampleRate)
+      ? options.sampleRate
+      : 48000;
+    args.push('-ar', String(rate));
+    args.push('-b:a', options?.bitrate && options.bitrate !== 'lossless' ? options.bitrate : '128k');
+  } else if (targetFormat === 'flac') {
     args.push('-compression_level', '8');
-  } else if (targetFormat === 'ogg' || targetFormat === 'opus') {
+  } else if (targetFormat === 'ogg') {
     args.push('-q:a', '5');
   } else if (
     options?.bitrate &&
@@ -54,10 +67,21 @@ function buildAudioArgs(
     args.push('-b:a', options.bitrate);
   }
 
-  if (options?.sampleRate) args.push('-ar', String(options.sampleRate));
+  if (
+    options?.sampleRate &&
+    targetFormat !== 'opus' &&
+    targetFormat !== 'webm'
+  ) {
+    args.push('-ar', String(options.sampleRate));
+  }
 
   args.push('-y', outputPath);
   return args;
+}
+
+/** 图片转换参数（如 TIFF 预览解码 / 图片格式互转） */
+function buildImageArgs(inputPath: string, outputPath: string): string[] {
+  return ['-i', inputPath, '-y', outputPath];
 }
 
 function buildVideoArgs(
@@ -118,12 +142,70 @@ function buildVideoArgs(
 
 // ============== IPC 处理器注册 ==============
 
+type FileType = 'audio' | 'video' | 'image';
+
+function buildArgs(
+  fileType: FileType,
+  inputPath: string,
+  outputPath: string,
+  targetFormat: string,
+  options?: Record<string, unknown>,
+): string[] {
+  if (fileType === 'audio') return buildAudioArgs(inputPath, outputPath, targetFormat, options as any);
+  if (fileType === 'image') return buildImageArgs(inputPath, outputPath);
+  return buildVideoArgs(inputPath, outputPath, targetFormat, options as any);
+}
+
+/** 校验 ffmpeg.exe 存在；不存在时抛出带路径指引的错误 */
+function ensureFFmpegAvailable(): string {
+  const ffmpegPath = getFFmpegPath();
+  if (!fs.existsSync(ffmpegPath)) {
+    throw new Error(
+      'FFmpeg 引擎未找到。请将 ffmpeg.exe 放置在:\n' +
+      (app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources')) +
+      '\n\n可从 https://github.com/BtbN/FFmpeg-Builds/releases 下载 static 版本'
+    );
+  }
+  return ffmpegPath;
+}
+
+/** 运行一次 ffmpeg 转换（输入/输出均为本地临时文件路径） */
+function runFFmpeg(
+  ffmpegPath: string,
+  args: string[],
+  cleanupPaths: string[],
+): Promise<void> {
+  console.log('[Native-FFmpeg] 启动转换:', ffmpegPath, args.join(' '));
+  return new Promise<void>((resolve, reject) => {
+    const proc = spawn(ffmpegPath, args, { windowsHide: true });
+    let stderr = '';
+
+    proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+
+    proc.on('close', (code: number) => {
+      if (code !== 0) {
+        for (const p of cleanupPaths) { try { fs.unlinkSync(p); } catch {} }
+        const errorDetail = stderr.slice(-300) || '未知错误';
+        reject(new Error(`FFmpeg 转换失败 (退出码 ${code}): ${errorDetail}`));
+        return;
+      }
+      resolve();
+    });
+
+    proc.on('error', (err) => {
+      for (const p of cleanupPaths) { try { fs.unlinkSync(p); } catch {} }
+      reject(new Error(`无法启动 FFmpeg 进程: ${err.message}\n\n请确保已安装 Visual C++ 运行库，并验证 ffmpeg.exe 是否完整`));
+    });
+  });
+}
+
 export function setupFFmpegIPC(): void {
+  // ---- 旧接口：整文件 ArrayBuffer 进出（仅用于小文件：预览解码等）----
   ipcMain.handle('ffmpeg:convert', async (_event, params: {
     inputData: ArrayBuffer;
     sourceFormat: string;
     targetFormat: string;
-    fileType: 'audio' | 'video';
+    fileType: FileType;
     options?: Record<string, unknown>;
   }) => {
     const { inputData, sourceFormat, targetFormat, fileType, options } = params;
@@ -132,73 +214,80 @@ export function setupFFmpegIPC(): void {
     const inputPath = join(tmpDir, `ff_in_${Date.now()}.${sourceFormat}`);
     const outputPath = join(tmpDir, `ff_out_${Date.now()}.${targetFormat}`);
 
-    // 写入输入文件
     fs.writeFileSync(inputPath, Buffer.from(inputData));
+    ensureFFmpegAvailable();
 
-    const ffmpegPath = getFFmpegPath();
-
-    // 检查 ffmpeg 是否存在
-    if (!fs.existsSync(ffmpegPath)) {
+    const args = buildArgs(fileType, inputPath, outputPath, targetFormat, options);
+    try {
+      await runFFmpeg(getFFmpegPath(), args, [inputPath, outputPath]);
       try { fs.unlinkSync(inputPath); } catch {}
-      throw new Error(
-        'FFmpeg 引擎未找到。请将 ffmpeg.exe 放置在:\n' +
-        (app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources')) +
-        '\n\n可从 https://github.com/BtbN/FFmpeg-Builds/releases 下载 static 版本'
+      const outputData = fs.readFileSync(outputPath);
+      try { fs.unlinkSync(outputPath); } catch {}
+      return outputData.buffer.slice(
+        outputData.byteOffset,
+        outputData.byteOffset + outputData.byteLength,
       );
+    } catch (err) {
+      try { fs.unlinkSync(inputPath); } catch {}
+      try { fs.unlinkSync(outputPath); } catch {}
+      throw err;
     }
+  });
 
-    const args = fileType === 'audio'
-      ? buildAudioArgs(inputPath, outputPath, targetFormat, options as any)
-      : buildVideoArgs(inputPath, outputPath, targetFormat, options as any);
+  // ---- 分块协议（大文件防闪退）：输入分块写入临时文件，输出分块读回 ----
+  // 旧方案把整个文件经 IPC 来回拷贝（渲染进程 + 主进程各持有完整副本），
+  // 1GB 视频峰值内存可达 4~5GB，直接把客户端顶到 OOM 闪退。
 
-    console.log('[Native-FFmpeg] 启动转换:', ffmpegPath, args.join(' '));
+  ipcMain.handle('ffmpeg:createTempInput', (_event, sourceFormat: string) => {
+    ensureFFmpegAvailable();
+    return join(os.tmpdir(), `ff_in_${Date.now()}.${sourceFormat}`);
+  });
 
-    return new Promise<ArrayBuffer>((resolve, reject) => {
-      const proc = spawn(ffmpegPath, args, { windowsHide: true });
+  ipcMain.handle('ffmpeg:appendChunk', (_event, path: string, chunk: ArrayBuffer) => {
+    fs.appendFileSync(path, Buffer.from(chunk));
+    return true;
+  });
 
-      let stderr = '';
-      let progress = 0;
+  ipcMain.handle('ffmpeg:writeBytes', (_event, path: string, data: ArrayBuffer) => {
+    fs.writeFileSync(path, Buffer.from(data));
+    return true;
+  });
 
-      proc.stderr.on('data', (data: Buffer) => {
-        const text = data.toString();
-        stderr += text;
+  ipcMain.handle('ffmpeg:convertFile', async (_event, params: {
+    inputPath: string;
+    sourceFormat: string;
+    targetFormat: string;
+    fileType: FileType;
+    options?: Record<string, unknown>;
+  }) => {
+    const { inputPath, targetFormat, fileType, options } = params;
+    ensureFFmpegAvailable();
+    const outputPath = join(os.tmpdir(), `ff_out_${Date.now()}.${targetFormat}`);
+    const args = buildArgs(fileType, inputPath, outputPath, targetFormat, options);
+    try {
+      await runFFmpeg(getFFmpegPath(), args, [inputPath, outputPath]);
+      const size = fs.existsSync(outputPath) ? fs.statSync(outputPath).size : 0;
+      if (size === 0) throw new Error('转换输出为空（0B），源文件可能已损坏或格式不受支持');
+      return { outputPath, size };
+    } catch (err) {
+      try { fs.unlinkSync(outputPath); } catch {}
+      throw err;
+    }
+  });
 
-        // 从 ffmpeg stderr 解析进度（ffmpeg 进度信息输出到 stderr）
-        const timeMatch = text.match(/time=(\d+):(\d+):(\d+)\.(\d+)/);
-        if (timeMatch) {
-          progress = Math.round((parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3])) / 10);
-        }
-      });
+  ipcMain.handle('ffmpeg:readChunk', (_event, path: string, offset: number, length: number) => {
+    const fd = fs.openSync(path, 'r');
+    try {
+      const buf = Buffer.alloc(length);
+      const bytesRead = fs.readSync(fd, buf, 0, length, offset);
+      return buf.buffer.slice(buf.byteOffset, buf.byteOffset + bytesRead);
+    } finally {
+      fs.closeSync(fd);
+    }
+  });
 
-      proc.on('close', (code: number) => {
-        // 清理输入文件
-        try { fs.unlinkSync(inputPath); } catch {}
-
-        if (code !== 0) {
-          try { fs.unlinkSync(outputPath); } catch {}
-          const errorDetail = stderr.slice(-300) || '未知错误';
-          reject(new Error(`FFmpeg 转换失败 (退出码 ${code}): ${errorDetail}`));
-          return;
-        }
-
-        try {
-          const outputData = fs.readFileSync(outputPath);
-          try { fs.unlinkSync(outputPath); } catch {}
-          // 返回 ArrayBuffer（会被 Electron IPC 序列化）
-          resolve(outputData.buffer.slice(
-            outputData.byteOffset,
-            outputData.byteOffset + outputData.byteLength,
-          ));
-        } catch (err: any) {
-          reject(new Error(`读取转换结果失败: ${err.message}`));
-        }
-      });
-
-      proc.on('error', (err) => {
-        try { fs.unlinkSync(inputPath); } catch {}
-        try { fs.unlinkSync(outputPath); } catch {}
-        reject(new Error(`无法启动 FFmpeg 进程: ${err.message}\n\n请确保已安装 Visual C++ 运行库，并验证 ffmpeg.exe 是否完整`));
-      });
-    });
+  ipcMain.handle('ffmpeg:cleanupFile', (_event, path: string) => {
+    try { fs.unlinkSync(path); } catch {}
+    return true;
   });
 }

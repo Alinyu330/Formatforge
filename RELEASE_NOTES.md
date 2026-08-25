@@ -1,8 +1,37 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v27 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v28 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v28 — 三端转换与预览全面修复（OPUS/OGV/PDF/DOCX/大文件）
+
+### 问题修复 🐛
+- **修复 Windows 客户端音频转 OPUS / WEBM 失败**：FFmpeg 原生 Opus 编码器不支持 44100Hz 等采样率，现对 OPUS / WEBM 目标强制 48kHz 采样率并改用比特率模式（`-b:a`）
+- **修复客户端解密 QQ 音乐加密音频时「获取 ekey 失败：直连 QQ 音乐接口被浏览器拦截」**：Windows / Android 客户端默认改走 Cloudflare 代理（qq.formatforge.asia），Electron CSP 同步放行代理域名
+- **修复大文件转换时客户端闪退（双客户端）**：
+  - Windows：输入 / 输出文件改走分块传输协议（临时文件 + 512KB 分块 IPC 读写），不再整文件载入渲染进程内存
+  - 网页 / Android：FFmpeg WASM 改用 WORKERFS 流式挂载，文件按需读取
+- **修复 WMA 无法预览、部分视频格式转换成功后无法预览的问题**：三端统一「预览解码桥」——Windows 走原生 FFmpeg 转码（ultrafast 低延迟），网页 / Android 走 WASM 转码（限 720p / 30 分钟防内存溢出），FLV / AVI / WMV / MPEG / TS 等格式预览恢复正常
+- **修复 OGV 格式转换崩溃**：@ffmpeg/core 升级至 0.12.10，修复 libtheora 编码器兼容性问题
+- **修复图片转 TIFF 输出为「假 TIFF」的问题**：此前 Canvas 导出的实为改扩展名的 PNG，专业软件无法识别；现改用 FFmpeg 真编码为 TIFF，TIFF 转换结果的预览也同步修复
+- **修复 PDF 转换与预览在部分环境失败**：
+  - `Promise.withResolvers is not a function`：pdfjs-dist v6 依赖 ES2024/ES2025 新 API，为主线程与 worker 双端注入 polyfill
+  - PDF 预览 `getOrInsertComputed is not a function`：补齐 `Map.prototype.getOrInsertComputed` / `Promise.try` polyfill
+- **修复 DOCX 转换报错晦涩的问题**：空文件 / 旧版 .doc 改扩展名 / 损坏文件现在给出明确中文提示（如「不是有效的 DOCX 文件……请先用 Office/WPS 另存为 DOCX 格式」），不再抛出 `End of data reached` 这类原始错误
+
+### 性能优化 🏎️
+- 移动端视频转换提速：分辨率选项真正生效（此前选择后被忽略）、x264 / libvpx 编码速度档位与缩放算法优化
+
+### 验证
+- tsc 编译（根 + Electron）与网页构建通过
+- 浏览器实测：PDF 源文件预览分页渲染 ✓、PDF → PNG 转换 ✓、PNG → TIFF 转换 + TIFF 预览 ✓、伪造 DOCX 报错提示 ✓
+
+> Backup tag: `backup-20260825-v28`
+> 安装包：[FormatForge-Setup-1.3.9.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28)（Windows）· [FormatForge-v28.apk](https://formatforge.asia/Formatforge/FormatForge-v28.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 

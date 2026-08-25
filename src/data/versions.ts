@@ -38,14 +38,34 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v27',
-  apkUrl: `${SITE_BASE}/FormatForge-v27.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.8.exe?v=20260825v27',
-  exeLabel: 'FormatForge-Setup-1.3.8.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v27/FormatForge-Setup-1.3.8.exe`,
+  version: 'v28',
+  apkUrl: `${SITE_BASE}/FormatForge-v28.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28',
+  exeLabel: 'FormatForge-Setup-1.3.9.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v28/FormatForge-Setup-1.3.9.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v28',
+    title: '三端转换与预览全面修复（OPUS/OGV/PDF/DOCX/大文件）',
+    date: '2026-08-25',
+    highlights: [
+      '修复 Windows 客户端音频转 OPUS / WEBM 失败（Opus 编码器强制 48kHz 采样率）',
+      '修复客户端解密 QQ 音乐加密音频时「获取 ekey 失败」：原生客户端改走 Cloudflare 代理，不再被浏览器拦截',
+      '修复大文件转换时客户端闪退：Windows 端分块传输、网页 / Android 端 WORKERFS 流式挂载，不再整文件载入内存',
+      '修复 WMA 无法预览、部分视频格式转换后无法预览的问题（三端统一预览解码桥）',
+      '修复 OGV 格式转换崩溃（FFmpeg 核心升级至 0.12.10）',
+      '修复图片转 TIFF 输出为「假 TIFF」的问题：改用 FFmpeg 真编码，专业软件可正常识别；TIFF / PDF 预览同步修复',
+      '修复 PDF 转换与预览在部分环境失败（Promise.withResolvers / Map.getOrInsertComputed 等新 API 兼容补丁）',
+      '修复 DOCX 转换报错晦涩的问题：无效文件给出明确中文提示',
+      '移动端视频转换提速：分辨率选项生效 + 编码速度档位优化',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.9.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v28.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v27',
     title: '修复 Windows 客户端历史版本按钮 + 构建流程自动同步',

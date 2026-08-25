@@ -1,6 +1,11 @@
 /**
  * Electron 原生 FFmpeg 适配器
  * 通过 IPC 调用主进程的 ffmpeg.exe，性能远超 WASM
+ *
+ * 大文件防闪退（v28）：旧方案把整个文件经 IPC 在渲染/主进程间来回拷贝，
+ * 峰值内存约为文件大小 4~5 倍，大文件直接 OOM 闪退。
+ * 现改为分块协议：输入分块(4MB)写入主进程临时文件 → ffmpeg 读临时文件转换
+ * → 输出留在主进程临时文件，渲染层分块读回组装 Blob。
  */
 import type { MediaAdapter } from './media.adapter';
 import type { ConvertTask } from '@/types';
@@ -16,9 +21,21 @@ declare global {
         inputData: ArrayBuffer,
         sourceFormat: string,
         targetFormat: string,
-        fileType: 'audio' | 'video',
+        fileType: 'audio' | 'video' | 'image',
         options?: Record<string, unknown>,
       ) => Promise<ArrayBuffer>;
+      createTempInput: (sourceFormat: string) => Promise<string>;
+      appendChunk: (path: string, chunk: ArrayBuffer) => Promise<boolean>;
+      writeBytes: (path: string, data: ArrayBuffer) => Promise<boolean>;
+      convertFile: (params: {
+        inputPath: string;
+        sourceFormat: string;
+        targetFormat: string;
+        fileType: 'audio' | 'video' | 'image';
+        options?: Record<string, unknown>;
+      }) => Promise<{ outputPath: string; size: number }>;
+      readChunk: (path: string, offset: number, length: number) => Promise<ArrayBuffer>;
+      cleanupFile: (path: string) => Promise<boolean>;
       isAvailable: () => boolean;
     };
     electronKGG?: {
@@ -46,6 +63,41 @@ function getMimeType(targetFormat: string, fileType: 'audio' | 'video'): string 
   return videoMimeMap[targetFormat.toLowerCase()] ?? 'application/octet-stream';
 }
 
+/** 分块大小：4MB（IPC 结构化克隆单次传输安全且高效） */
+const IPC_CHUNK_SIZE = 4 * 1024 * 1024;
+
+/** 将 Blob 分块写入主进程临时文件，返回临时文件路径 */
+async function writeBlobToTemp(blob: Blob, sourceFormat: string): Promise<string> {
+  const bridge = window.electronFFmpeg!;
+  const inputPath = await bridge.createTempInput(sourceFormat);
+  for (let offset = 0; offset < blob.size; offset += IPC_CHUNK_SIZE) {
+    const chunk = await blob.slice(offset, Math.min(offset + IPC_CHUNK_SIZE, blob.size)).arrayBuffer();
+    await bridge.appendChunk(inputPath, chunk);
+  }
+  return inputPath;
+}
+
+/** 将 Uint8Array 写入主进程临时文件，返回临时文件路径 */
+async function writeBytesToTemp(data: Uint8Array, sourceFormat: string): Promise<string> {
+  const bridge = window.electronFFmpeg!;
+  const inputPath = await bridge.createTempInput(sourceFormat);
+  await bridge.writeBytes(
+    inputPath,
+    data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer,
+  );
+  return inputPath;
+}
+
+/** 分块读取主进程输出文件并组装 Blob（避免一次性整文件 IPC 拷贝） */
+async function readOutputAsBlob(outputPath: string, size: number, mimeType: string): Promise<Blob> {
+  const bridge = window.electronFFmpeg!;
+  const parts: ArrayBuffer[] = [];
+  for (let offset = 0; offset < size; offset += IPC_CHUNK_SIZE) {
+    parts.push(await bridge.readChunk(outputPath, offset, Math.min(IPC_CHUNK_SIZE, size - offset)));
+  }
+  return new Blob(parts, { type: mimeType });
+}
+
 async function convertNative(
   task: ConvertTask,
   fileType: 'audio' | 'video',
@@ -56,10 +108,12 @@ async function convertNative(
     throw new Error('原生 FFmpeg 引擎不可用，请确认已安装 ffmpeg.exe');
   }
 
-  let inputData = await task.sourceFile.arrayBuffer();
   let sourceFormat = task.sourceFormat;
+  let inputPath: string;
+
   if (fileType === 'audio') {
-    const raw = new Uint8Array(inputData);
+    // 音频：可能需要先解密（解密后的数据量较小，一次性写入临时文件）
+    const raw = new Uint8Array(await task.sourceFile.arrayBuffer());
     if (isQMCFile(task.fileName)) {
       let result;
       if (isMusicexFormat(raw)) {
@@ -76,15 +130,15 @@ async function convertNative(
       } else {
         result = await decryptQMC(raw);
       }
-      inputData = result.data.buffer.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength);
+      inputPath = await writeBytesToTemp(result.data, result.ext);
       sourceFormat = result.ext;
     } else if (isNCMFile(task.fileName)) {
       const result = await decryptNCM(raw);
-      inputData = result.data.buffer.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength);
+      inputPath = await writeBytesToTemp(result.data, result.ext);
       sourceFormat = result.ext;
     } else if (isKGMFile(task.fileName)) {
       const result = await decryptKGM(raw);
-      inputData = result.data.buffer.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength);
+      inputPath = await writeBytesToTemp(result.data, result.ext);
       sourceFormat = result.ext;
     } else if (isKGGFile(task.fileName)) {
       const keyId = extractKGGKeyId(raw);
@@ -101,10 +155,16 @@ async function convertNative(
       if (!encryptionKey) {
         throw new Error('未在密钥库中找到该 KGG 文件的解密密钥。请先安装并登录酷狗音乐客户端下载该歌曲，或在页面中导入 KGMusicV3.db 密钥数据库');
       }
-      const result = decryptKGG(raw, encryptionKey);
-      inputData = result.data.buffer.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength);
+      const result = await decryptKGG(raw, encryptionKey);
+      inputPath = await writeBytesToTemp(result.data, result.ext);
       sourceFormat = result.ext;
+    } else {
+      // 普通音频：原样分块写入（FLAC 无损动辄上百 MB，同样走分块）
+      inputPath = await writeBlobToTemp(task.sourceFile, sourceFormat);
     }
+  } else {
+    // 视频：大文件主力场景，分块写入临时文件
+    inputPath = await writeBlobToTemp(task.sourceFile, sourceFormat);
   }
   onProgress(5);
 
@@ -123,23 +183,27 @@ async function convertNative(
     options.height = task.videoOptions.height;
   }
 
-  // 通过 IPC 调用原生 FFmpeg
-  const outputBuffer = await bridge.convert(
-    inputData,
-    sourceFormat,
-    task.targetFormat.toLowerCase(),
-    fileType,
-    options,
-  );
+  let outputPath = '';
+  try {
+    const result = await bridge.convertFile({
+      inputPath,
+      sourceFormat,
+      targetFormat: task.targetFormat.toLowerCase(),
+      fileType,
+      options,
+    });
+    outputPath = result.outputPath;
+    onProgress(99);
 
-  onProgress(99);
-
-  const blob = new Blob([outputBuffer], {
-    type: getMimeType(task.targetFormat, fileType),
-  });
-
-  onProgress(100);
-  return blob;
+    const blob = await readOutputAsBlob(outputPath, result.size, getMimeType(task.targetFormat, fileType));
+    onProgress(100);
+    return blob;
+  } finally {
+    try { await bridge.cleanupFile(inputPath); } catch { /* 清理失败可忽略 */ }
+    if (outputPath) {
+      try { await bridge.cleanupFile(outputPath); } catch { /* 清理失败可忽略 */ }
+    }
+  }
 }
 
 export const electronMediaAdapter: MediaAdapter = {

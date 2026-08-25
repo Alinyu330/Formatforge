@@ -6,11 +6,11 @@ require('./rt/electron-rt');
 
 contextBridge.exposeInMainWorld('electronFFmpeg', {
   /**
-   * 使用原生 FFmpeg 转换音频/视频
+   * 使用原生 FFmpeg 转换音频/视频（小文件接口：预览解码等）
    * @param inputData - 输入文件的 ArrayBuffer
    * @param sourceFormat - 源文件格式扩展名
    * @param targetFormat - 目标格式扩展名
-   * @param fileType - 'audio' 或 'video'
+   * @param fileType - 'audio' | 'video' | 'image'
    * @param options - 转换选项（比特率、采样率等）
    * @returns 转换后的文件 ArrayBuffer
    */
@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld('electronFFmpeg', {
     inputData: ArrayBuffer,
     sourceFormat: string,
     targetFormat: string,
-    fileType: 'audio' | 'video',
+    fileType: 'audio' | 'video' | 'image',
     options?: Record<string, unknown>,
   ): Promise<ArrayBuffer> => {
     return ipcRenderer.invoke('ffmpeg:convert', {
@@ -28,6 +28,44 @@ contextBridge.exposeInMainWorld('electronFFmpeg', {
       fileType,
       options,
     });
+  },
+
+  // ---- 分块协议（大文件防闪退）：避免整文件经 IPC 来回拷贝导致 OOM ----
+
+  /** 创建输入临时文件，返回主进程本地路径 */
+  createTempInput: (sourceFormat: string): Promise<string> => {
+    return ipcRenderer.invoke('ffmpeg:createTempInput', sourceFormat);
+  },
+
+  /** 向临时文件追加一块数据（约 4MB/块） */
+  appendChunk: (path: string, chunk: ArrayBuffer): Promise<boolean> => {
+    return ipcRenderer.invoke('ffmpeg:appendChunk', path, chunk);
+  },
+
+  /** 整体覆写临时文件（用于解密后的小音频） */
+  writeBytes: (path: string, data: ArrayBuffer): Promise<boolean> => {
+    return ipcRenderer.invoke('ffmpeg:writeBytes', path, data);
+  },
+
+  /** 对临时输入文件执行转换，返回输出文件路径与大小（不回传内容） */
+  convertFile: (params: {
+    inputPath: string;
+    sourceFormat: string;
+    targetFormat: string;
+    fileType: 'audio' | 'video' | 'image';
+    options?: Record<string, unknown>;
+  }): Promise<{ outputPath: string; size: number }> => {
+    return ipcRenderer.invoke('ffmpeg:convertFile', params);
+  },
+
+  /** 分块读取输出文件 */
+  readChunk: (path: string, offset: number, length: number): Promise<ArrayBuffer> => {
+    return ipcRenderer.invoke('ffmpeg:readChunk', path, offset, length);
+  },
+
+  /** 删除主进程临时文件 */
+  cleanupFile: (path: string): Promise<boolean> => {
+    return ipcRenderer.invoke('ffmpeg:cleanupFile', path);
   },
 
   /** 检查原生 FFmpeg 是否可用 */

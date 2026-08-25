@@ -205,7 +205,7 @@ function isRecognizedAudio(data: Uint8Array): boolean {
 async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => void): Promise<Blob> {
   const ff = await getFFmpeg();
 
-  let inputData: Uint8Array;
+  let inputData: Uint8Array = new Uint8Array(0);
   let actualSourceFormat = task.sourceFormat;
   let wasDecrypted = false;
   let decryptFormat = '';
@@ -306,7 +306,6 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
     }
   } else {
     onProgress(5);
-    inputData = new Uint8Array(await task.sourceFile.arrayBuffer());
     onProgress(15);
   }
 
@@ -315,7 +314,16 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
     throw new Error(`解密失败：输出数据不是可识别的音频流。该 ${decryptFormat.toUpperCase()} 文件可能已损坏或来自不支持的版本`);
   }
 
-  const inputName = `in-${Date.now()}.${actualSourceFormat}`;
+  // 大音频防 OOM：未加密源（FLAC 无损动辄上百 MB）优先 WORKERFS 零拷贝挂载
+  let audioMountDir: string | null = null;
+  let inputName: string;
+  if (!wasDecrypted) {
+    const mounted = await mountInputFile(ff, task.sourceFile, actualSourceFormat);
+    inputName = mounted.inputName;
+    audioMountDir = mounted.mountDir;
+  } else {
+    inputName = `in-${Date.now()}.${actualSourceFormat}`;
+  }
   const outputName = `out-${Date.now()}.${task.targetFormat}`;
   const args: string[] = ['-i', inputName, '-vn'];
 
@@ -331,7 +339,9 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
   recentLogs = [];
 
   try {
-    await ff.writeFile(inputName, inputData);
+    if (wasDecrypted) {
+      await ff.writeFile(inputName, inputData);
+    }
     await withTimeout(
       ff.exec(args),
       CONVERSION_TIMEOUT_MS,
@@ -363,18 +373,52 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
     throw error;
   } finally {
     activeProgressCb = null;
-    try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
+    await unmountInputFile(ff, audioMountDir, inputName);
     try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
+  }
+}
+
+/**
+ * 将源文件以 WORKERFS 挂载到 FFmpeg 虚拟文件系统（大文件防 OOM）。
+ * 旧方案 fetchFile + writeFile 会把整个文件读进内存并在 MEMFS 再存一份，
+ * 1GB 视频在 WebView 里峰值内存约 2GB，直接闪退；
+ * WORKERFS 由 FFmpeg 按需流式读取，输入零拷贝。
+ * 挂载失败（核心不支持等）时回退旧方案。
+ */
+export async function mountInputFile(ff: FFmpeg, file: Blob, sourceFormat: string): Promise<{ inputName: string; mountDir: string | null }> {
+  const mountedName = `vin-${Date.now()}.${sourceFormat}`;
+  const mountDir = `/mnt-${Date.now()}`;
+  try {
+    await ff.createDir(mountDir);
+    // 重命名挂载（File 构造不复制数据），避免原始文件名以 "-" 开头被 ffmpeg 当作选项
+    const wrapped = new File([file], mountedName);
+    await ff.mount('WORKERFS' as unknown as Parameters<FFmpeg['mount']>[0], { files: [wrapped] }, mountDir);
+    return { inputName: `${mountDir}/${mountedName}`, mountDir };
+  } catch (err) {
+    console.warn('[WASM-FFmpeg] WORKERFS 挂载失败，回退 writeFile:', err);
+    try { await ff.deleteDir(mountDir); } catch { /* 忽略 */ }
+    return { inputName: mountedName, mountDir: null };
+  }
+}
+
+export async function unmountInputFile(ff: FFmpeg, mountDir: string | null, inputName: string): Promise<void> {
+  if (mountDir) {
+    try { await ff.unmount(mountDir); } catch { /* 忽略 */ }
+    try { await ff.deleteDir(mountDir); } catch { /* 忽略 */ }
+  } else {
+    try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
   }
 }
 
 async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => void): Promise<Blob> {
   const ff = await getFFmpeg();
 
-  const inputName = `vin-${Date.now()}.${task.sourceFormat}`;
   const outputName = `vout-${Date.now()}.${task.targetFormat}`;
 
   onProgress(2);
+
+  // 大文件防 OOM：优先 WORKERFS 流式挂载，失败回退整文件写入
+  const { inputName, mountDir } = await mountInputFile(ff, task.sourceFile, task.sourceFormat);
 
   const videoCodec = videoCodecMap[task.targetFormat] || 'libx264';
   const audioCodec = videoAudioCodecMap[task.targetFormat] || 'aac';
@@ -425,7 +469,10 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
   recentLogs = [];
 
   try {
-    await ff.writeFile(inputName, await fetchFile(task.sourceFile));
+    if (!mountDir) {
+      // 回退路径：WORKERFS 不可用时整文件写入
+      await ff.writeFile(inputName, await fetchFile(task.sourceFile));
+    }
     onProgress(5);
     await withTimeout(
       ff.exec(args),
@@ -451,7 +498,7 @@ async function convertVideoWasm(task: ConvertTask, onProgress: (p: number) => vo
     throw error;
   } finally {
     activeProgressCb = null;
-    try { await ff.deleteFile(inputName); } catch { /* 清理临时文件失败可忽略 */ }
+    await unmountInputFile(ff, mountDir, inputName);
     try { await ff.deleteFile(outputName); } catch { /* 清理临时文件失败可忽略 */ }
   }
 }

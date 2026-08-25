@@ -20,3 +20,6 @@ worker/.wrangler/
 .wrangler-cfg/
 .wrangler-tmp/
 electron/dist-v*/
+dist-v*/
+.fftest/
+.tmp-test/

@@ -127,6 +127,22 @@ export async function convertDocument(task: ConvertTask, onProgress: (p: number)
   }
 
   const buffer = await task.sourceFile.arrayBuffer();
+
+  // 空文件 / 非法文件检测：否则 mammoth 会抛出晦涩的
+  // "End of data reached (data length = 0, asked index = 4)" 之类错误
+  if (buffer.byteLength === 0) {
+    throw new Error(`文件「${task.fileName}」为空或读取失败，请重新选择文件`);
+  }
+  const zipMagic = new Uint8Array(buffer.slice(0, 4));
+  const isZip = zipMagic[0] === 0x50 && zipMagic[1] === 0x4B;
+  if (!isZip) {
+    throw new Error(
+      `文件「${task.fileName}」不是有效的 ${sourceExt.toUpperCase()} 文件` +
+      `（可能是旧版 ${sourceExt === 'docx' ? '.doc' : '.ppt'} 直接改了扩展名，或文件已损坏）。` +
+      `请先用 Office/WPS 打开并另存为 ${sourceExt.toUpperCase()} 格式后再转换`,
+    );
+  }
+
   onProgress(30);
   if (targetFmt === sourceExt) {
     onProgress(100);
@@ -137,11 +153,16 @@ export async function convertDocument(task: ConvertTask, onProgress: (p: number)
   }
 
   onProgress(60);
-  const blob = sourceExt === 'docx'
-    ? targetFmt === 'txt' ? await docxToTxt(buffer) : targetFmt === 'html' ? await docxToHtml(buffer) : await docxToPdf(buffer)
-    : targetFmt === 'txt' ? await pptxToTxt(buffer) : await pptxToHtml(buffer);
-  onProgress(100);
-  return blob;
+  try {
+    const blob = sourceExt === 'docx'
+      ? targetFmt === 'txt' ? await docxToTxt(buffer) : targetFmt === 'html' ? await docxToHtml(buffer) : await docxToPdf(buffer)
+      : targetFmt === 'txt' ? await pptxToTxt(buffer) : await pptxToHtml(buffer);
+    onProgress(100);
+    return blob;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`解析 ${sourceExt.toUpperCase()} 失败：${detail}。文件可能已损坏或来自不受支持的版本`);
+  }
 }
 
 export function isDocFile(filename: string): boolean {

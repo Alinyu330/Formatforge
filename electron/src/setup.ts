@@ -224,8 +224,8 @@ export function setupContentSecurityPolicy(customScheme: string): void {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           electronIsDev
-            ? `default-src ${customScheme}://* 'unsafe-inline' devtools://* 'unsafe-eval' data: blob:; worker-src blob: ${customScheme}://*; connect-src ${customScheme}://* https://formatforge.asia; frame-src ${customScheme}://* https://formatforge.asia;`
-            : `default-src ${customScheme}://* 'unsafe-inline' data: blob:; worker-src blob: ${customScheme}://*; connect-src ${customScheme}://* https://formatforge.asia; frame-src ${customScheme}://* https://formatforge.asia;`,
+            ? `default-src ${customScheme}://* 'unsafe-inline' devtools://* 'unsafe-eval' data: blob:; worker-src blob: ${customScheme}://*; connect-src ${customScheme}://* https://formatforge.asia https://qq.formatforge.asia https://dl.formatforge.asia; frame-src ${customScheme}://* https://formatforge.asia;`
+            : `default-src ${customScheme}://* 'unsafe-inline' data: blob:; worker-src blob: ${customScheme}://*; connect-src ${customScheme}://* https://formatforge.asia https://qq.formatforge.asia https://dl.formatforge.asia; frame-src ${customScheme}://* https://formatforge.asia;`,
         ],
       },
     });

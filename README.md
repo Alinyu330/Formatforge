@@ -17,18 +17,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.8.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.8.exe?v=20260825v27)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.9.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.8.exe?v=20260825v27
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v27/FormatForge-Setup-1.3.8.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v28/FormatForge-Setup-1.3.9.exe
    ```
 
    > v21 起客户端支持**应用内更新**：启动自动检查新版本（「检查更新」入口位于首页顶部右侧、主题切换按钮旁），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；v26 起「历史版本」页面也在应用内打开（不再跳转浏览器，可离线查看）——**v27 修复 v26 Windows 安装包误打包旧版页面导致该功能未生效的问题**，请更新至 1.3.8 及以上。v20 及更早版本需手动下载安装本次更新。
@@ -46,18 +46,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v27.apk](https://formatforge.asia/Formatforge/FormatForge-v27.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v28.apk](https://formatforge.asia/Formatforge/FormatForge-v28.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v27.apk
+   https://formatforge.asia/Formatforge/FormatForge-v28.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v27/FormatForge-v27.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v28/FormatForge-v28.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
@@ -186,6 +186,16 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 > 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v28 — 三端转换与预览全面修复（OPUS/OGV/PDF/DOCX/大文件）
+- **修复**：Windows 客户端音频转 OPUS / WEBM 失败（Opus 编码器强制 48kHz 采样率）
+- **修复**：客户端解密 QQ 音乐加密音频时「获取 ekey 失败：直连 QQ 音乐接口被浏览器拦截」——原生客户端改走 Cloudflare 代理
+- **修复**：大文件转换时客户端闪退——Windows 端分块传输、网页 / Android 端 WORKERFS 流式挂载，不再整文件载入内存
+- **修复**：WMA 无法预览、部分视频格式转换后无法预览——三端统一预览解码桥
+- **修复**：OGV 转换崩溃（FFmpeg 核心升级 0.12.10）；图片转 TIFF 输出「假 TIFF」改真编码；PDF 转换 / 预览新 API 兼容；DOCX 转换报错改为明确中文提示
+- **优化**：移动端视频转换提速（分辨率选项生效 + 编码速度档位）
+
+> 安装包：[FormatForge-Setup-1.3.9.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28)（Windows）· [FormatForge-v28.apk](https://formatforge.asia/Formatforge/FormatForge-v28.apk)（Android）
 
 ### v27 — 修复 Windows 客户端历史版本按钮
 - **修复**：Windows 客户端「历史版本」按钮仍跳转系统浏览器的问题——v26 的 Windows 安装包误打包了旧版页面资源（构建流程缺陷），Android 客户端不受影响；本次重新打包后历史版本页面在应用内打开（顶部「返回首页」一键回主页），与 Android 客户端行为一致

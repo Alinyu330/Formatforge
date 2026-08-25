@@ -18,6 +18,17 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
     return pdf.output('blob');
   }
 
+  if (format === 'tiff' || format === 'tif') {
+    // Canvas 原生不支持 TIFF 编码：先导出 PNG，再经 FFmpeg 真编码为 TIFF
+    // （旧实现输出的是改了扩展名的 PNG 假 TIFF，专业软件无法识别）
+    const pngBlob = await canvasToBlob(canvas, 'image/png', quality);
+    onProgress(75);
+    const { transcodeImage } = await import('./preview');
+    const tiffBlob = await transcodeImage(pngBlob, 'png', format);
+    onProgress(100);
+    return tiffBlob;
+  }
+
   let mimeType: string;
   if (format === 'jpeg' || format === 'jpg') {
     mimeType = 'image/jpeg';
@@ -28,23 +39,11 @@ export async function convertImage(task: ConvertTask, onProgress: (p: number) =>
   } else if (format === 'ico') {
     // ICO requires special handling - just convert to small PNG
     mimeType = 'image/png';
-  } else if (format === 'tiff' || format === 'tif') {
-    // TIFF not natively supported by Canvas; fallback to PNG
-    mimeType = 'image/png';
   } else {
     mimeType = 'image/png';
   }
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (b) => {
-        if (b) resolve(b);
-        else reject(new Error('Canvas toBlob failed'));
-      },
-      mimeType,
-      quality
-    );
-  });
+  const blob = await canvasToBlob(canvas, mimeType, quality);
 
   onProgress(100);
   return blob;
@@ -182,6 +181,20 @@ export async function convertImagesToPdf(
 
   onProgress(100);
   return pdf!.output('blob');
+}
+
+/** Canvas 导出为指定 mime 的 Blob */
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => {
+        if (b) resolve(b);
+        else reject(new Error('Canvas toBlob failed'));
+      },
+      mimeType,
+      quality,
+    );
+  });
 }
 
 function loadImage(file: File): Promise<HTMLImageElement> {

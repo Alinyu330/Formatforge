@@ -1,7 +1,5 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import { pdfjsLib } from './pdfjs';
 import type { ConvertTask } from '@/types';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).toString();
 
 async function loadPdf(file: File) {
   return pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
