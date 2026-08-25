@@ -85,3 +85,17 @@ contextBridge.exposeInMainWorld('electronUpdater', {
 });
 
 console.log('[Preload] 应用内更新桥接已注册');
+
+// ============== 系统浏览器打开外部链接桥接 ==============
+
+contextBridge.exposeInMainWorld('electronShell', {
+  /**
+   * 在系统默认浏览器打开外部链接（仅本项目站点 https 域名）
+   * @param url - 目标链接
+   * @returns { ok: true } 成功；{ ok: false, error } 失败
+   */
+  openExternal: (url: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('shell:openExternal', url),
+});
+
+console.log('[Preload] 系统浏览器桥接已注册');

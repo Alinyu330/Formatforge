@@ -9,6 +9,7 @@ import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } 
 import { setupFFmpegIPC } from './ffmpeg-ipc';
 import { setupKGGIPC } from './kgg-ipc';
 import { setupUpdaterIPC } from './update-ipc';
+import { setupShellIPC } from './shell-ipc';
 
 // Graceful handling of unhandled errors.
 unhandled();
@@ -53,6 +54,8 @@ if (electronIsDev) {
   setupKGGIPC();
   // 注册应用内更新 IPC（检查/下载/安装由用户在界面选择）
   setupUpdaterIPC(() => myCapacitorApp.getMainWindow() ?? null);
+  // 注册系统浏览器打开外部链接 IPC（使用说明/历史版本在线化）
+  setupShellIPC();
 })();
 
 // Handle when all of our windows are close (platforms have their own expectations).

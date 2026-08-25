@@ -1,8 +1,29 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v22 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v24 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v24 — 客户端内容彻底在线化 + 检查更新入口调整
+
+### 问题修复 🐛
+- **彻底修复客户端「历史版本」「使用说明」仍停留旧内容的问题**：
+  - 客户端内「使用说明」「历史版本」改为用**系统默认浏览器打开在线版**（Windows 经 Electron shell 域名白名单校验、Android 经原生 Intent 插件）
+  - 在线页地址统一 `encodeURI` 百分号编码（兼容 Electron shell / Android Intent 解析中文路径）+ 附带 `?v=<版本号>` 版本参数，每次发版自动穿透浏览器 / CDN 缓存
+  - 效果：今后历史版本信息与使用说明内容更新只需部署网页，客户端**无需重装**即可实时同步
+
+### 体验调整 ⚡
+- 「检查更新」按钮从首页导航区（历史版本 / 下载客户端 / 使用说明旁）移至**首页页脚**，与下载类按钮物理分离，避免误触
+
+### 验证
+- tsc 编译通过，网页版构建通过
+- 在线版使用说明 / 历史版本链接均带 `?v=v24` 参数，中文路径已百分号编码
+
+> Backup tag: `backup-20260825-v24`
+> 安装包：[FormatForge-Setup-1.3.5.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24)（Windows）· [FormatForge-v24.apk](https://formatforge.asia/Formatforge/FormatForge-v24.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页页脚）；v20 及更早版本需手动下载安装。
 
 ---
 

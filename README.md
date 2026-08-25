@@ -17,21 +17,21 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.3.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.5.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.3.exe?v=20260825v22
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v22/FormatForge-Setup-1.3.3.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v24/FormatForge-Setup-1.3.5.exe
    ```
 
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本（也可在首页点「检查更新」），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v22 起客户端使用说明改为优先加载在线版，文档更新无需重装客户端。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本（「检查更新」入口位于首页页脚），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v24 起客户端使用说明与历史版本改用系统默认浏览器打开在线版，链接统一编码并附带版本参数自动穿透缓存，内容随网页部署即时更新，无需重装客户端。v20 及更早版本需手动下载安装本次更新。
 
    **安装时若弹出蓝色窗口「Windows 已保护你的电脑」**（SmartScreen 提示），这是 Windows 对**未签名软件**的标准提示，并非病毒或文件损坏。处理方式：
    1. 点击窗口上的 **「更多信息」**
@@ -46,22 +46,22 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v22.apk](https://formatforge.asia/Formatforge/FormatForge-v22.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v24.apk](https://formatforge.asia/Formatforge/FormatForge-v24.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v22.apk
+   https://formatforge.asia/Formatforge/FormatForge-v24.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v22/FormatForge-v22.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v24/FormatForge-v24.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
-   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v22 起客户端使用说明改为优先加载在线版，文档更新无需重装客户端。v20 及更早版本需手动下载安装本次更新。
+   > v21 起客户端支持**应用内更新**：启动自动检查新版本，确认后自动下载并唤起系统安装器，是否安装由你确认。v24 起客户端使用说明与历史版本改用系统默认浏览器打开在线版，链接统一编码并附带版本参数自动穿透缓存，内容随网页部署即时更新，无需重装客户端。v20 及更早版本需手动下载安装本次更新。
    - **旧版本备用**：[v20](https://formatforge.asia/Formatforge/FormatForge-v20.apk) · [v19](https://formatforge.asia/Formatforge/FormatForge-v19.apk) · [v18](https://formatforge.asia/Formatforge/FormatForge-v18.apk) · [v16.1](https://formatforge.asia/Formatforge/FormatForge-v16.1.apk)（也可在应用内「历史版本」页面查看全部版本并下载）
 2. 或使用 **Chrome** 浏览器打开应用网址 → 点击右上角菜单 → **"添加到主屏幕"** / **"安装应用"**
 3. 安装后主屏幕出现 FormatForge 图标，点即打开
@@ -186,6 +186,12 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 > 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v24 — 客户端内容彻底在线化 + 检查更新入口调整
+- **修复**：彻底解决客户端「历史版本」「使用说明」仍停留旧内容的问题——客户端改由系统默认浏览器打开在线版，链接统一 `encodeURI` 编码并附带 `?v=<版本号>` 参数穿透浏览器 / CDN 缓存，今后内容随网页部署即时生效，无需重装客户端
+- **调整**：「检查更新」按钮移至首页页脚，与历史版本 / 下载 / 使用说明按钮分离，避免误触
+
+> 安装包：[FormatForge-Setup-1.3.5.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.5.exe?v=20260825v24)（Windows）· [FormatForge-v24.apk](https://formatforge.asia/Formatforge/FormatForge-v24.apk)（Android）
 
 ### v22 — 客户端使用说明实时更新 + 返回功能
 - **新增**：客户端内「使用说明」改为优先加载在线版——内容随网页部署自动更新，今后说明文档更新无需重新安装客户端；离线时自动回退应用内置副本

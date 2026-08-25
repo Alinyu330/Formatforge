@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(KugouPlugin.class);
         registerPlugin(SaveFilePlugin.class);
         registerPlugin(AppUpdatePlugin.class);
+        registerPlugin(OpenExternalPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

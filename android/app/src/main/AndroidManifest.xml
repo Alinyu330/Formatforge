@@ -35,6 +35,14 @@
         </provider>
     </application>
 
+    <!-- Android 11 包可见性：允许通过 ACTION_VIEW 打开 https 链接（系统浏览器） -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

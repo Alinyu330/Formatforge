@@ -17,3 +17,4 @@ Thumbs.db
 .gh-tmp/
 *.idsig
 worker/.wrangler/
+.wrangler-cfg/

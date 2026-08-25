@@ -3,7 +3,8 @@ import { Music, Video, BriefcaseBusiness, Image, Shield, Zap, Smartphone, AlertT
 import ThemeToggle from '@/components/ThemeToggle';
 import { downloadLatestClient } from '@/utils/appDownload';
 import { isUpdaterSupported } from '@/utils/appUpdater';
-import { openGuide } from '@/utils/guide';
+import { openGuide, openHistory } from '@/utils/guide';
+import { isNativePlatform } from '@/utils/platform';
 
 const features = [
   {
@@ -147,11 +148,11 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 站点导航入口：历史版本 / 下载客户端 / 使用说明 */}
+        {/* 站点导航入口：历史版本 / 下载客户端 / 使用说明（检查更新已移至页脚，避免误触） */}
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 sm:mt-8 w-full max-w-2xl">
           <button
             type="button"
-            onClick={() => navigate('/history')}
+            onClick={() => (isNativePlatform() ? openHistory() : navigate('/history'))}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
               text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
               hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
@@ -182,20 +183,6 @@ export default function Home() {
             <BookOpen className="w-3.5 h-3.5 text-[#f59e0b]" />
             使用说明
           </button>
-          {/* 原生客户端（Electron / Android）显示应用内检查更新入口 */}
-          {isUpdaterSupported() && (
-            <button
-              type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('ff:check-update'))}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)]
-                text-[11px] sm:text-xs font-medium text-[var(--text-muted)]
-                hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]
-                hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-[#10b981]" />
-              检查更新
-            </button>
-          )}
         </div>
 
         {/* Highlights */}
@@ -218,6 +205,19 @@ export default function Home() {
         <p className="text-[10px] text-[var(--text-faint)]">
           所有处理在浏览器本地完成 &middot; 无需上传服务器 &middot; 保护隐私安全
         </p>
+        {/* 原生客户端（Electron / Android）手动检查更新入口：置于页脚，与上方导航按钮分离，避免误触 */}
+        {isUpdaterSupported() && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('ff:check-update'))}
+            className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)]
+              text-[10px] sm:text-[11px] text-[var(--text-muted)]
+              hover:text-[var(--text-strong)] hover:border-[var(--border-strong)] active:scale-[0.98] transition-all duration-300"
+          >
+            <RefreshCw className="w-3 h-3 text-[#10b981]" />
+            检查更新
+          </button>
+        )}
       </footer>
     </div>
   );
