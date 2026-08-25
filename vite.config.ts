@@ -120,7 +120,10 @@ export default defineConfig({
         navigateFallback: 'index.html',
         // /api/ 走代理；.apk/.zip/.exe/.pdf 等下载文件必须绕过 SW，
         // 否则导航到下载链接会被劫持为 index.html（表现为"只显示背景和反馈邮箱"）
-        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa|pdf)$/],
+        // .html 同理：使用说明.html 带 ?v= 版本参数后不匹配 precache 条目，
+        // 会落入 NavigationRoute 被劫持为 index.html（表现为"只有黑色背景无内容"），
+        // 必须放行走网络；SPA 路由（/history 等）无 .html 后缀不受影响
+        navigateFallbackDenylist: [/^\/api\//, /\.(apk|zip|exe|dmg|ipa|pdf|html)$/],
         runtimeCaching: [
           {
             // 仅缓存未被 globPatterns 预缓存的 ffmpeg wasm。
