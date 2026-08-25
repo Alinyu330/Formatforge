@@ -665,6 +665,30 @@ function parseCookieValue(rawCookie: string | undefined, key: string): string {
 }
 
 /**
+ * 归一化用户粘贴的 Cookie 文本，确保可安全放入自定义请求头：
+ * 用户从 DevTools / 教程 / 导出工具复制的 Cookie 常为多行键值对，
+ * 内部换行符（trim 只去首尾）塞进 X-QQMusic-Cookie 头会让 fetch 同步抛
+ * "Failed to execute 'fetch' on 'Window': Invalid value"（HTTP 头禁止 CR/LF），
+ * 非 ISO-8859-1 字符（如中文注释）同样会被浏览器拒绝。
+ */
+function sanitizeCookieForHeader(raw: string): string {
+  return raw
+    // 多行 Cookie：换行视为键值对分隔符，归一为 "; "
+    .replace(/[\r\n]+/g, '; ')
+    // 制表符归一为空格（头值允许 tab，但归一更干净）
+    .replace(/\t/g, ' ')
+    // 其余控制字符（\0、垂直制表等）直接剔除
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    // 剔除超出 ISO-8859-1 的字符（中文注释等），避免 "non ISO-8859-1 code point"
+    .replace(/[^\u0000-\u00FF]/g, '')
+    // 合并重复的分号分隔符（既有分号 + 换行转换都会产生）
+    .replace(/(?:\s*;\s*)+/g, '; ')
+    .replace(/^[;\s]+/, '')
+    .replace(/[;\s]+$/, '')
+    .trim();
+}
+
+/**
  * 调用 QQ 音乐 GetEVkey API 获取 ekey
  * @param cred 用户凭据（uin + authst）
  * @param songMid 歌曲 media_mid
@@ -687,7 +711,9 @@ export async function fetchEkeyFromAPI(
     return { ekey: cached.ekey, songMid, filename };
   }
 
-  const cookieHeader = cred.rawCookie?.trim() || '';
+  // 归一化 Cookie：多行粘贴的换行/控制字符/非 ISO-8859-1 字符会导致
+  // fetch 自定义头直接抛 "Invalid value"，这里统一清洗后再解析与发送
+  const cookieHeader = sanitizeCookieForHeader(cred.rawCookie || '');
   const uin = cred.uin || parseCookieValue(cookieHeader, 'uin');
   const authst = cred.authst || parseCookieValue(cookieHeader, 'authst');
   const musicKey = cred.musicKey || parseCookieValue(cookieHeader, 'qqmusic_key') || parseCookieValue(cookieHeader, 'qm_keyst');
@@ -761,7 +787,11 @@ export async function fetchEkeyFromAPI(
     if (!isUsingQmProxy) {
       throw new Error('获取 ekey 失败：直连 QQ 音乐接口被浏览器拦截（CORS）。请配置 VITE_QQMUSIC_PROXY_URL 使用代理，或使用桌面端应用。');
     }
-    throw new Error(`获取 ekey 失败：网络请求异常（${err instanceof Error ? err.message : String(err)}）`);
+    const detail = err instanceof Error ? err.message : String(err);
+    const hint = detail.includes('Invalid value')
+      ? '；Cookie 含换行等非法字符，请重新复制完整的单行 Cookie'
+      : '';
+    throw new Error(`获取 ekey 失败：网络请求异常（${detail}${hint}）`);
   }
 
   if (!resp.ok) {

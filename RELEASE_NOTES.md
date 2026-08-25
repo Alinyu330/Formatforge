@@ -1,8 +1,26 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v28 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v29 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v29 — 修复 QQ 音乐加密音频解密（Cookie 格式兼容）
+
+### 问题修复 🐛
+- **修复三端（网页 / Windows / Android）解密 QQ 音乐加密音频时「获取 ekey 失败：网络请求异常（Failed to execute 'fetch' on 'Window': Invalid value）」的问题**
+- **根因**：从 DevTools / 导出工具 / 教程复制的 Cookie 常为多行键值对文本，输入框的 `trim()` 只能去掉首尾空白，内部换行符（CR/LF）残留后放入 `X-QQMusic-Cookie` 自定义请求头，违反 HTTP 头规范，浏览器 fetch 同步抛出 `Invalid value`——三端共用同一请求代码，因此全部失败
+- **修复**：发送前对 Cookie 做头安全归一化——换行视为键值对分隔符归一为 `; `、剔除控制字符与超出 ISO-8859-1 的字符（如中文注释）、合并重复分隔符；多行粘贴格式现在直接可用
+- 残余异常场景（如仍含非法字符）的错误提示现在附带 Cookie 格式排查指引
+
+### 验证
+- 浏览器实测：多行 Cookie / 单行 Cookie / 含中文注释 Cookie 三种场景，请求均成功发出（进入 API 鉴权层），不再出现 `Invalid value`
+- tsc 类型检查通过
+
+> Backup tag: `backup-20260825-v29`
+> 安装包：[FormatForge-Setup-1.3.10.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29)（Windows）· [FormatForge-v29.apk](https://formatforge.asia/Formatforge/FormatForge-v29.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 

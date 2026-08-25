@@ -38,14 +38,28 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v28',
-  apkUrl: `${SITE_BASE}/FormatForge-v28.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28',
-  exeLabel: 'FormatForge-Setup-1.3.9.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v28/FormatForge-Setup-1.3.9.exe`,
+  version: 'v29',
+  apkUrl: `${SITE_BASE}/FormatForge-v29.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29',
+  exeLabel: 'FormatForge-Setup-1.3.10.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v29/FormatForge-Setup-1.3.10.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v29',
+    title: '修复 QQ 音乐加密音频解密（Cookie 格式兼容）',
+    date: '2026-08-25',
+    highlights: [
+      '修复三端解密 QQ 音乐加密音频时「获取 ekey 失败：网络请求异常（Invalid value）」的问题',
+      '根因：从工具 / 教程复制的 Cookie 常为多行文本，内部换行符放入自定义请求头会导致浏览器 fetch 直接拒绝',
+      '现在会自动清洗 Cookie 中的换行、控制字符与非 ASCII 字符（如中文注释），多行粘贴格式直接可用',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.10.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v29.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v28',
     title: '三端转换与预览全面修复（OPUS/OGV/PDF/DOCX/大文件）',

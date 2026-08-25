@@ -17,18 +17,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### PC 端（Windows / macOS / Linux）
 
-1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.9.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28)
+1. **Windows 客户端（推荐，直接下载）**：👉 [点击下载 FormatForge-Setup-1.3.10.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29)
 
    可复制链接（国内 CDN 加速）：
 
    ```
-   https://dl.formatforge.asia/FormatForge-Setup-1.3.9.exe?v=20260825v28
+   https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29
    ```
 
    备用链接（GitHub）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v28/FormatForge-Setup-1.3.9.exe
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v29/FormatForge-Setup-1.3.10.exe
    ```
 
    > v21 起客户端支持**应用内更新**：启动自动检查新版本（「检查更新」入口位于首页顶部右侧、主题切换按钮旁），是否更新完全由你决定；下载显示进度，可立即重启安装或退出时自动安装。v25 起客户端「使用说明」改为应用内全屏打开（优先在线版、离线回退本地副本，顶部一键返回主页）；v26 起「历史版本」页面也在应用内打开（不再跳转浏览器，可离线查看）——**v27 修复 v26 Windows 安装包误打包旧版页面导致该功能未生效的问题**，请更新至 1.3.8 及以上。v20 及更早版本需手动下载安装本次更新。
@@ -46,18 +46,18 @@ FormatForge 是一款在浏览器中 **完全本地运行、无需上传服务�
 
 ### Android 端
 
-1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v28.apk](https://formatforge.asia/Formatforge/FormatForge-v28.apk)
+1. **直接下载安装客户端（APK，直接下载，国内推荐）**：👉 [点击下载 FormatForge-v29.apk](https://formatforge.asia/Formatforge/FormatForge-v29.apk)
 
    可复制链接（国内主链接，加载快）：
 
    ```
-   https://formatforge.asia/Formatforge/FormatForge-v28.apk
+   https://formatforge.asia/Formatforge/FormatForge-v29.apk
    ```
 
    备用链接（GitHub，国内网络可能无法访问）：
 
    ```
-   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v28/FormatForge-v28.apk
+   https://github.com/Alinyu330/Formatforge/releases/download/backup-20260825-v29/FormatForge-v29.apk
    ```
 
    手机直接点击下载；下载后点击安装，需允许「安装未知来源应用」；同签名版本可直接覆盖安装升级
@@ -186,6 +186,11 @@ npm run preview
 
 > 版本按发布时间从新到旧排列，前行为最近发布的功能与解决的问题。
 > 也可在网页端首页点击「历史版本」查看全部版本并下载安装包。
+
+### v29 — 修复 QQ 音乐加密音频解密（Cookie 格式兼容）
+- **修复**：三端解密 QQ 音乐加密音频时「获取 ekey 失败：网络请求异常（Invalid value）」——多行粘贴的 Cookie 换行符放入自定义请求头被浏览器拒绝；现在自动清洗换行 / 控制字符 / 非 ASCII 字符，多行 Cookie 直接可用
+
+> 安装包：[FormatForge-Setup-1.3.10.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29)（Windows）· [FormatForge-v29.apk](https://formatforge.asia/Formatforge/FormatForge-v29.apk)（Android）
 
 ### v28 — 三端转换与预览全面修复（OPUS/OGV/PDF/DOCX/大文件）
 - **修复**：Windows 客户端音频转 OPUS / WEBM 失败（Opus 编码器强制 48kHz 采样率）
