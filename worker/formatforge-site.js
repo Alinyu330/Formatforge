@@ -41,13 +41,23 @@ async function handle(request) {
     init.body = await request.arrayBuffer();
   }
 
-  const response = await fetch(UPSTREAM + path + url.search, init);
+  // sw.js 决定新旧版本切换速度：Service Worker 更新检查若命中
+  // Cloudflare / GitHub 边缘缓存（GitHub Pages max-age=600），
+  // 旧 SW 会长期驻留（表现为部署后用户长时间停留旧版、旧 bug 复现）。
+  // 对 sw.js 追加时间戳参数绕过各层缓存，保证每次都取到最新脚本
+  const isSwScript = path.endsWith('/sw.js');
+  let upstream = UPSTREAM + path + url.search;
+  if (isSwScript) {
+    upstream += (url.search ? '&' : '?') + '_swts=' + Date.now();
+  }
+
+  const response = await fetch(upstream, init);
 
   // 下载文件与 404 页面禁止缓存，避免部署窗口期或版本更新后，
   // 客户端/CDN 仍命中旧缓存（如误把 APK 请求缓存的 404 页面）
   const isDownload = /\.(apk|exe|zip|dmg|ipa|msi)$/i.test(path);
   const is404 = response.status === 404;
-  if (isDownload || is404) {
+  if (isDownload || is404 || isSwScript) {
     const newHeaders = new Headers(response.headers);
     newHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     if (is404) newHeaders.set('Pragma', 'no-cache');
