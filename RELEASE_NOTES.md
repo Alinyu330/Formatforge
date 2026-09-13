@@ -1,8 +1,31 @@
 # FormatForge Release Notes
 
-> 记录 v6 – v29 版本更新内容，可直接复制到 GitHub Release。
+> 记录 v6 – v30 版本更新内容，可直接复制到 GitHub Release。
 > 版本按发布时间从新到旧排列。
 > 在线体验：https://alinyu330.github.io/Formatforge
+
+---
+
+## v30 — PC 端支持 QQ 音乐新版加密（mflac2 / mgg2 等数字尾数格式）
+
+### 新增支持 ✨
+- **QQ 音乐新版数字尾数加密格式（mflac2 / mgg2 / mflac0 等，mqms2 家族）解密转换**：手机 QQ 音乐下载的文件传输到电脑后，可在网页端 / Windows 客户端正常解密并转换为任意目标格式
+- 自动解析文件内嵌的歌曲元数据（songId / mediaMid），经公开接口换取歌曲信息后调用 GetEVkey 拉取解密密钥（ekey）
+- 多个资源名候选自动重试，并以解密结果的音频魔数校验兜底，避免错钥产出损坏音频
+
+### 问题修复 🐛
+- **修复该类文件此前「转换成功」但输出为几 KB 损坏音频、播放时长 0:00 的问题**：旧代码不认识新文件布局（纯加密流 + STag 尾部元数据），误走旧版解密兜底路径产出垃圾流
+
+### 已知限制
+- 个别文件（如较早下载、对应资源已从 QQ 音乐服务端下架的文件）无法取得密钥，属服务端资源可用性问题而非本地缺陷
+
+### 验证
+- 6 个真实 mflac2 样本端到端解密：输出完整 FLAC（192kHz，时长 209–292s），帧同步校验通过，转换 / 预览正常
+- 旧格式回归：musicex（mflac / mgg 旧版）行为与修复前逐字一致，STag 检测零误判；tsc 类型检查通过
+
+> Backup tag: `backup-20260914-v30`
+> 安装包：[FormatForge-Setup-1.3.11.exe](https://dl.formatforge.asia/FormatForge-Setup-1.3.11.exe?v=20260914v30)（Windows）· [FormatForge-v30.apk](https://formatforge.asia/Formatforge/FormatForge-v30.apk)（Android）
+> v21 及以上客户端可直接在应用内更新（「检查更新」入口在首页顶部右侧）；v20 及更早版本需手动下载安装。
 
 ---
 

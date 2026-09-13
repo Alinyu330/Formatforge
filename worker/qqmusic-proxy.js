@@ -32,6 +32,28 @@ async function handle(request) {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
+  // 只读路由：数字 songId → 歌曲信息（含 song mid），供 mqms2 STag 尾族解析 songmid。
+  // c.y.qq.com 该接口无 CORS 头，需服务端转发；不接收 Cookie、不接收写操作。
+  const url = new URL(request.url);
+  if (request.method === 'GET' && url.pathname === '/songinfo.fcg') {
+    const songid = url.searchParams.get('songid') || '';
+    if (!/^\d{1,12}$/.test(songid)) {
+      return new Response('bad songid', { status: 400, headers: corsHeaders });
+    }
+    const resp = await fetch(`https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg?songid=${songid}&format=json`, {
+      headers: { Referer: 'https://y.qq.com/' },
+    });
+    const text = await resp.text();
+    return new Response(text, {
+      status: resp.status,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': resp.headers.get('Content-Type') || 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=86400',
+      },
+    });
+  }
+
   if (request.method === 'POST') {
     const cookie = request.headers.get('X-QQMusic-Cookie') || '';
     const body = await request.text();

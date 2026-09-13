@@ -9,7 +9,7 @@ import bundledWasmURL from '@ffmpeg/core/wasm?url';
 import workerURL from '@ffmpeg/ffmpeg/worker?url';
 import type { MediaAdapter } from './media.adapter';
 import type { ConvertTask } from '@/types';
-import { isQMCFile, decryptQMC, decryptMusicexWithEkey, fetchEkeyFromAPI, isValidQMCHeader, isMusicexFormat, MusicexNeedsEkeyError, parseMusicexFooter } from './qmc';
+import { isQMCFile, decryptQMC, decryptMusicexWithEkey, fetchEkeyFromAPI, isValidQMCHeader, isMusicexFormat, MusicexNeedsEkeyError, parseMusicexFooter, parseStagMeta, decryptStagWithEkeyCandidates } from './qmc';
 import { isNCMFile, decryptNCM, isValidNCMHeader } from './ncm';
 import { isKGMFile, decryptKGM, isValidKGMHeader } from './kgm';
 import { isKGGFile, decryptKGG, extractKGGKeyId, getKugouKey, hasKugouKeyDb, getKugouKeyCount } from './kgg';
@@ -219,6 +219,7 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
     const isKGM = isKGMFile(task.fileName);
     const isKGG = isKGGFile(task.fileName);
     const isMusicex = isQMC && isMusicexFormat(raw);
+    const stagMeta = isQMC ? parseStagMeta(raw) : null;
 
     if (isKGG) {
       if (!hasKugouKeyDb()) {
@@ -246,7 +247,16 @@ async function convertAudioWasm(task: ConvertTask, onProgress: (p: number) => vo
 
       if (headerValid) {
       onProgress(10);
-      if (isMusicex) {
+      if (stagMeta) {
+        console.log('[diag] convertAudio: path=mqms2-STag fileName=', task.fileName, 'meta=', stagMeta);
+        const cred = task.audioOptions?.qmCredentials;
+        if ((!cred?.uin && !cred?.rawCookie) || (!cred?.authst && !cred?.musicKey && !cred?.rawCookie)) {
+          throw qmCredentialError();
+        }
+        const result = await decryptStagWithEkeyCandidates(raw, cred, stagMeta, task.sourceFormat);
+        inputData = result.data;
+        actualSourceFormat = result.ext;
+      } else if (isMusicex) {
         console.log('[diag] convertAudio: path=musicex+API fileName=', task.fileName);
         const info = parseMusicexFooter(raw);
         const cred = task.audioOptions?.qmCredentials;

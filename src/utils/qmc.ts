@@ -613,6 +613,157 @@ export async function decryptMusicexWithEkey(
   return { data: decrypted, ext };
 }
 
+// ==================== mqms2 / STag 尾族（数字尾数新格式：mflac2 / mgg2 / mflac0 等） ====================
+// 布局：[QMC2 加密音频流][ascii meta "songId,flag,mediaMid"][u32BE metaLen]["STag"]
+// 无 musicex footer、无明文文件头，ekey 不内嵌，需经 GetEVkey 拉取。
+// 检测条件严格（STag 尾 + meta 形如 数字,数字,字母数字），不会命中旧格式。
+
+export interface StagMeta {
+  songId: number;
+  flag: number;
+  mediaMid: string;
+  tagLen: number;
+}
+
+const STAG_META_RE = /^(\d{1,12}),(\d{1,3}),([A-Za-z0-9]{8,32})$/;
+
+export function parseStagMeta(data: Uint8Array): StagMeta | null {
+  if (data.length < 32) return null;
+  if (
+    data[data.length - 4] !== 0x53 || data[data.length - 3] !== 0x54 ||
+    data[data.length - 2] !== 0x61 || data[data.length - 1] !== 0x67
+  ) {
+    return null; // "STag"
+  }
+  const tagLen = readUint32BE(data, data.length - 8);
+  if (tagLen < 8 || tagLen > 512 || tagLen + 8 >= data.length) return null;
+  const tag = decodeAscii(data.slice(data.length - 8 - tagLen, data.length - 8));
+  if (tag === null) return null;
+  const m = STAG_META_RE.exec(tag);
+  if (!m) return null;
+  return { songId: Number(m[1]), flag: Number(m[2]), mediaMid: m[3], tagLen };
+}
+
+/** 提取 STag 尾族的加密音频区（去掉尾部元数据） */
+export function extractStagAudioData(data: Uint8Array): Uint8Array | null {
+  const meta = parseStagMeta(data);
+  if (!meta) return null;
+  return data.slice(0, data.length - 8 - meta.tagLen);
+}
+
+/** 使用 ekey 解密 STag 尾族文件 */
+export async function decryptStagWithEkey(
+  data: Uint8Array,
+  ekeyStr: string
+): Promise<{ data: Uint8Array; ext: string }> {
+  const audio = extractStagAudioData(data);
+  if (!audio || audio.length < 4) {
+    throw new Error('不是有效的 mqms2 STag 格式文件');
+  }
+  const ekeyRaw = base64Decode(ekeyStr);
+  const derivedKey = deriveQMC2Key(ekeyRaw);
+  if (derivedKey.length === 0) {
+    throw new Error('ekey 解密失败，密钥为空');
+  }
+  const decrypted = decryptQMC2WithKey(audio, derivedKey, 0);
+  console.log('[diag] decryptStagWithEkey: audioLen=', audio.length, 'keyLen=', derivedKey.length, 'algo=', derivedKey.length <= 300 ? 'MapCipher' : 'RC4', 'ext=', detectAudioFormat(decrypted), 'first16=', Array.from(decrypted.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+  return { data: decrypted, ext: detectAudioFormat(decrypted) };
+}
+
+/**
+ * songId → songmid 解析（免登录）。
+ * mqms2 STag 尾族只含数字 songId 与 mediaMid，而 GetEVkey 严格要求真 song mid；
+ * c.y.qq.com 旧版单曲接口可按数字 id 返回 song mid，但无 CORS 头，
+ * 故 dev 走 vite 代理、生产走 Worker 的 /songinfo.fcg 只读路由（与 GetEVkey 代理同架构）。
+ */
+const SONG_INFO_PROXY_FALLBACK = 'https://qq.formatforge.asia/songinfo.fcg';
+
+function resolveSongInfoApi(): string {
+  if (import.meta.env.DEV) {
+    return '/api/qqsonginfo';
+  }
+  if (import.meta.env.VITE_QQMUSIC_PROXY_URL) {
+    return String(import.meta.env.VITE_QQMUSIC_PROXY_URL).replace(/\/cgi-bin\/musicu\.fcg$/, '') + '/songinfo.fcg';
+  }
+  const platform = getPlatform();
+  if (platform === 'electron' || platform === 'android') {
+    return SONG_INFO_PROXY_FALLBACK;
+  }
+  return 'https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg';
+}
+
+const songMidCache = new Map<number, string>();
+
+export async function resolveSongMidBySongId(songId: number): Promise<string> {
+  const cached = songMidCache.get(songId);
+  if (cached) return cached;
+  const api = resolveSongInfoApi();
+  let resp: Response;
+  try {
+    resp = await fetch(`${api}?songid=${songId}&format=json`, {
+      headers: { Referer: 'https://y.qq.com/' },
+    });
+  } catch (err) {
+    throw new Error(`解析歌曲信息失败（网络异常）：${err instanceof Error ? err.message : String(err)}`);
+  }
+  if (!resp.ok) {
+    throw new Error(`解析歌曲信息失败：HTTP ${resp.status}`);
+  }
+  const json = await resp.json();
+  const mid = json?.data?.[0]?.mid;
+  if (typeof mid !== 'string' || mid.length < 8) {
+    throw new Error(`解析歌曲信息失败：未找到歌曲 ID ${songId} 对应的 song mid`);
+  }
+  songMidCache.set(songId, mid);
+  return mid;
+}
+
+/**
+ * STag 尾族文件的 ekey 拉取 + 解密一体化：meta 只提供 mediaMid，GetEVkey 需要真 song mid；
+ * 且服务端规范资源名前缀（AIM0/O4M0）与 STag 内 mediaMid 不一定同族，
+ * 故按候选逐个拉 ekey、解密并以音频魔数校验，首个通过者返回。
+ * platform 必须非 '20'（实测 platform=20 对数字尾数资源只返回 vkey 不返回 ekey）。
+ */
+export async function decryptStagWithEkeyCandidates(
+  data: Uint8Array,
+  cred: QMCredentials,
+  stag: StagMeta,
+  digitExt: string,
+  platform: string = '27',
+): Promise<{ data: Uint8Array; ext: string }> {
+  const songMid = await resolveSongMidBySongId(stag.songId);
+  const base = digitExt.startsWith('mflac') ? 'mflac' : 'mgg';
+  const filenames = [
+    `AIM0${stag.mediaMid}.${digitExt}`,
+    `O4M0${stag.mediaMid}.${digitExt}`,
+    `AIM0${stag.mediaMid}.${base}`,
+    `O4M0${stag.mediaMid}.${base}`,
+  ];
+  let lastErr: unknown = null;
+  for (const filename of filenames) {
+    let ekey: string;
+    try {
+      ({ ekey } = await fetchEkeyFromAPI(cred, songMid, filename, platform));
+    } catch (err) {
+      lastErr = err;
+      console.log('[diag] decryptStagWithEkeyCandidates: ekey failed filename=', filename, 'err=', err instanceof Error ? err.message : String(err));
+      continue;
+    }
+    try {
+      const result = await decryptStagWithEkey(data, ekey);
+      if (isValidAudioHeader(result.data)) {
+        console.log('[diag] decryptStagWithEkeyCandidates: success filename=', filename);
+        return result;
+      }
+      lastErr = new Error(`候选 ${filename} 的 ekey 解密结果不是有效音频头`);
+      console.log('[diag] decryptStagWithEkeyCandidates: bad magic filename=', filename, 'first16=', Array.from(result.data.slice(0, 16)).map(b => b.toString(16).padStart(2, '0')).join(' '));
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('获取 ekey 失败');
+}
+
 // ==================== GetEVkey API ====================
 
 // 开发环境走 Vite 代理；生产 Web 部署通过 VITE_QQMUSIC_PROXY_URL（Cloudflare Worker 代理）规避 CORS。
@@ -846,6 +997,15 @@ export async function decryptQMC(data: Uint8Array): Promise<{ data: Uint8Array; 
     );
   }
 
+  // 1.5 检测 mqms2 STag 尾族（mflac2/mgg2 等数字尾数新格式）—— 同样需要外部 ekey
+  const stagMeta = parseStagMeta(data);
+  if (stagMeta) {
+    throw new MusicexNeedsEkeyError(
+      `该文件为 QQ 音乐新版加密格式（mqms2，歌曲 ID ${stagMeta.songId}），需提供 ekey 解密。`,
+      { songId: stagMeta.songId, mediaMid: stagMeta.mediaMid, filename: '' }
+    );
+  }
+
   // 2. 检测 QMCv2 格式（文件头以 "mgg" / "mfl" / "#!" 开头）
   const isQmc2Header =
     data.length > 4 && (
@@ -982,6 +1142,8 @@ export function isValidQMCHeader(bytes: Uint8Array): boolean {
     const magic = new TextDecoder().decode(last8);
     if (magic === 'musicex\0') return true;
   }
+  // mqms2 STag 尾族（mflac2/mgg2 等数字尾数新格式）
+  if (parseStagMeta(bytes)) return true;
   return false;
 }
 

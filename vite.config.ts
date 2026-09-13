@@ -61,6 +61,17 @@ export default defineConfig({
           });
         },
       },
+      '/api/qqsonginfo': {
+        target: 'https://c.y.qq.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/qqsonginfo/, '/v8/fcg-bin/fcg_play_single_song.fcg'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Referer', 'https://y.qq.com/');
+          });
+        },
+      },
     },
   },
   build: {

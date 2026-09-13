@@ -38,14 +38,29 @@ export const GH_RELEASE_BASE = 'https://github.com/Alinyu330/Formatforge/release
 
 /** 最新版本安装包（下载按钮按设备分发） */
 export const LATEST = {
-  version: 'v29',
-  apkUrl: `${SITE_BASE}/FormatForge-v29.apk`,
-  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.10.exe?v=20260825v29',
-  exeLabel: 'FormatForge-Setup-1.3.10.exe',
-  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260825-v29/FormatForge-Setup-1.3.10.exe`,
+  version: 'v30',
+  apkUrl: `${SITE_BASE}/FormatForge-v30.apk`,
+  exeUrl: 'https://dl.formatforge.asia/FormatForge-Setup-1.3.11.exe?v=20260914v30',
+  exeLabel: 'FormatForge-Setup-1.3.11.exe',
+  exeGithubUrl: `${GH_RELEASE_BASE}/backup-20260914-v30/FormatForge-Setup-1.3.11.exe`,
 };
 
 export const VERSIONS: VersionInfo[] = [
+  {
+    version: 'v30',
+    title: 'PC 端支持 QQ 音乐新版加密（mflac2 / mgg2 等数字尾数格式）',
+    date: '2026-09-14',
+    highlights: [
+      '新增 QQ 音乐新版数字尾数加密格式（mflac2 / mgg2 / mflac0 等，mqms2 家族）解密转换支持：手机传输到电脑的文件可在网页 / Windows 端正常解密转换',
+      '修复此前该类文件「转换成功」但输出为几 KB 损坏音频、无法播放的问题',
+      '自动解析文件内嵌歌曲信息拉取解密密钥（ekey），多候选重试并以音频完整性校验兜底',
+      '已知限制：个别文件对应的 QQ 音乐服务端资源已下架，无法取得密钥解密',
+    ],
+    assets: [
+      { url: LATEST.exeUrl, label: 'Windows 安装包 (FormatForge-Setup-1.3.11.exe)', platform: 'windows' },
+      { url: LATEST.apkUrl, label: 'Android 安装包 (FormatForge-v30.apk)', platform: 'android' },
+    ],
+  },
   {
     version: 'v29',
     title: '修复 QQ 音乐加密音频解密（Cookie 格式兼容）',
